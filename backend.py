@@ -1795,9 +1795,9 @@ class JobSeekerBackend:
         indexed = self.matcher.index_jobs(jobs)
         print(f"✅ Indexed {indexed} jobs in vector database")
         
-        # Wait for indexing
+        # Wait for indexing (reduced from 2s to 1s for faster response)
         print("⏳ Waiting for indexing to complete...")
-        time.sleep(2)
+        time.sleep(1)
         
         # Match resume to jobs
         print(f"\n🎯 MATCHING & RANKING JOBS")
