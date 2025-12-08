@@ -1,19 +1,20 @@
-# 🔍 CareerLens - AI Career Intelligence Platform
+# 🔍 Smart Career - AI Career Intelligence Platform
 
-An AI-powered career intelligence platform built with Streamlit.
+An AI-powered career intelligence platform built with Streamlit, combining job matching, resume tailoring, and AI interview preparation.
 
 [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://blank-app-template.streamlit.app/)
 
 ## 🚀 Features
 
-### Core Features (streamlit_app.py)
-- **Job Seeker**: Fill information → Automatic job recommendations
-- **Job Match**: View AI-matched positions with Pinecone vector search
-- **Recruiter**: Post jobs and find candidates
-- **Recruitment Match**: Match candidates to job openings
-- **AI Interview**: Mock interviews and skill assessment
+### Core Pages
+- **🏠 Job Seeker**: Upload CV, GPT-4 analysis, auto-fill profile forms
+- **💼 Job Match**: AI-matched positions with Pinecone vector search
+- **🎯 Recruiter**: Post jobs and manage recruitment positions
+- **🔍 Recruitment Match**: Match candidates to job openings
+- **🤖 AI Interview**: Mock interviews and skill assessment
+- **📊 Market Dashboard**: CareerLens modular dashboard view
 
-### New Capabilities (app_new.py - Modular Dashboard)
+### CareerLens Features
 - **Market Positioning Dashboard**: See your match score, estimated salary, and skill gaps
 - **Resume Tailoring**: Generate ATS-optimized resumes tailored to specific jobs
 - **Multi-format Export**: Download resumes as DOCX, PDF, or TXT
@@ -22,16 +23,16 @@ An AI-powered career intelligence platform built with Streamlit.
 - **Indeed Job Source**: Alternative to LinkedIn via IndeedScraperAPI
 - **Token Tracking**: Monitor API usage and costs
 - **Enhanced Profile Extraction**: Two-pass verification for accuracy
+- **Advanced Visualizations**: Match score breakdowns, skill matrices, radar charts
 
 ## 📁 Project Structure
 
 ```
-├── streamlit_app.py      # Main multi-page app (Job Seeker, Match, Recruiter, AI Interview)
-├── app_new.py            # New modular dashboard (Market Positioning, Resume Tailoring)
+├── streamlit_app.py      # Main entry point - unified multi-page application
 ├── backend.py            # Backend services (ResumeParser, GPT4JobRoleDetector, JobMatcher, etc.)
 ├── config.py             # Configuration settings
 ├── database.py           # Database operations (JobSeekerDB, HeadhunterDB)
-├── modules/              # Modular components for new dashboard
+├── modules/              # Modular components for Market Dashboard
 │   ├── analysis/         # Match analysis
 │   ├── resume_generator/ # Resume generation & formatting
 │   ├── resume_upload/    # File extraction & profile parsing
@@ -60,11 +61,7 @@ An AI-powered career intelligence platform built with Streamlit.
 
 3. Run the app:
    ```bash
-   # Original multi-page app
    streamlit run streamlit_app.py
-
-   # New modular dashboard
-   streamlit run app_new.py
    ```
 
 ## 📦 Key Dependencies
@@ -78,6 +75,15 @@ An AI-powered career intelligence platform built with Streamlit.
 - `reportlab` - PDF generation
 - `python-docx` - DOCX generation
 - `PyPDF2` - PDF parsing
+
+## ⚡ Streamlit Cloud Optimizations
+
+The application includes several optimizations for stable deployment:
+- Environment variables for reduced logging and telemetry
+- Increased recursion limit (3000) for complex operations
+- SQLite temp directory configuration
+- WebSocket stability mechanisms
+- Memory cleanup utilities
 
 ## 📝 License
 
