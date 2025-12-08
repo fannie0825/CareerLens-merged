@@ -1,6 +1,7 @@
 """
 Job Matcher Backend - COMPLETE VERSION
 With improved error handling and simplified RapidAPI queries
+Integrated with CareerLens features for enhanced functionality
 """
 
 import os
@@ -8,22 +9,856 @@ import re
 import time
 import json
 import docx
+import hashlib
+from io import BytesIO
 from typing import Dict, List, Optional, Tuple
 from datetime import datetime
 import requests
 from docx import Document
+from docx.shared import Inches, Pt, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
 import PyPDF2
 from sentence_transformers import SentenceTransformer
 from pinecone import Pinecone, ServerlessSpec
 import pandas as pd
+import numpy as np
 import openai
 from openai import AzureOpenAI
 from config import Config
 import streamlit as st
 import sqlite3
 
+# Optional imports for enhanced features
+try:
+    import tiktoken
+    TIKTOKEN_AVAILABLE = True
+except ImportError:
+    TIKTOKEN_AVAILABLE = False
+
+try:
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.units import inch
+    from reportlab.lib.colors import HexColor, black
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, HRFlowable
+    from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
+    REPORTLAB_AVAILABLE = True
+except ImportError:
+    REPORTLAB_AVAILABLE = False
+
+try:
+    from sklearn.metrics.pairwise import cosine_similarity
+    SKLEARN_AVAILABLE = True
+except ImportError:
+    SKLEARN_AVAILABLE = False
+
 # Initialize config
 Config.setup()
+
+
+# ============================================================================
+# CAREERLENS UTILITY CLASSES AND FUNCTIONS
+# ============================================================================
+
+class TokenUsageTracker:
+    """Tracks token usage and costs for API calls (from CareerLens)"""
+    def __init__(self):
+        self.total_tokens = 0
+        self.total_prompt_tokens = 0
+        self.total_completion_tokens = 0
+        self.total_embedding_tokens = 0
+        self.cost_usd = 0.0
+        self.embedding_cost_per_1k = 0.00002
+        self.gpt4_mini_prompt_cost_per_1k = 0.00015
+        self.gpt4_mini_completion_cost_per_1k = 0.0006
+    
+    def add_embedding_tokens(self, tokens):
+        """Track embedding token usage"""
+        self.total_embedding_tokens += tokens
+        self.total_tokens += tokens
+        self.cost_usd += (tokens / 1000) * self.embedding_cost_per_1k
+    
+    def add_completion_tokens(self, prompt_tokens, completion_tokens):
+        """Track completion token usage"""
+        self.total_prompt_tokens += prompt_tokens
+        self.total_completion_tokens += completion_tokens
+        self.total_tokens += prompt_tokens + completion_tokens
+        self.cost_usd += (prompt_tokens / 1000) * self.gpt4_mini_prompt_cost_per_1k
+        self.cost_usd += (completion_tokens / 1000) * self.gpt4_mini_completion_cost_per_1k
+    
+    def get_summary(self):
+        """Get usage summary"""
+        return {
+            'total_tokens': self.total_tokens,
+            'embedding_tokens': self.total_embedding_tokens,
+            'prompt_tokens': self.total_prompt_tokens,
+            'completion_tokens': self.total_completion_tokens,
+            'estimated_cost_usd': round(self.cost_usd, 4)
+        }
+    
+    def reset(self):
+        """Reset counters"""
+        self.total_tokens = 0
+        self.total_prompt_tokens = 0
+        self.total_completion_tokens = 0
+        self.total_embedding_tokens = 0
+        self.cost_usd = 0.0
+
+
+class RateLimiter:
+    """Simple rate limiter for API calls (from CareerLens)"""
+    def __init__(self, max_requests_per_minute=10):
+        self.max_requests_per_minute = max_requests_per_minute
+        self.request_times = []
+    
+    def wait_if_needed(self):
+        """Wait if rate limit exceeded"""
+        if self.max_requests_per_minute <= 0:
+            return
+        
+        now = time.time()
+        one_minute_ago = now - 60
+        self.request_times = [t for t in self.request_times if t > one_minute_ago]
+        
+        if len(self.request_times) >= self.max_requests_per_minute:
+            oldest_request = min(self.request_times)
+            wait_time = 60 - (now - oldest_request) + 1
+            if wait_time > 0:
+                print(f"⏳ Rate limiting: waiting {wait_time:.1f}s...")
+                time.sleep(wait_time)
+                now = time.time()
+                one_minute_ago = now - 60
+                self.request_times = [t for t in self.request_times if t > one_minute_ago]
+        
+        self.request_times.append(time.time())
+
+
+def api_call_with_retry(request_func, max_retries=3, initial_delay=1):
+    """Execute API call with exponential backoff retry (from CareerLens)"""
+    delay = initial_delay
+    last_response = None
+    
+    for attempt in range(max_retries):
+        try:
+            response = request_func()
+            last_response = response
+            
+            if response.status_code == 429:
+                retry_after = response.headers.get('Retry-After', delay * 2)
+                try:
+                    wait_time = int(retry_after)
+                except:
+                    wait_time = delay * 2
+                
+                print(f"⚠️ Rate limited (attempt {attempt + 1}/{max_retries}), waiting {wait_time}s...")
+                time.sleep(wait_time)
+                delay = min(delay * 2, 60)
+                continue
+            
+            return response
+            
+        except requests.exceptions.RequestException as e:
+            print(f"⚠️ Request error (attempt {attempt + 1}/{max_retries}): {e}")
+            if attempt < max_retries - 1:
+                time.sleep(delay)
+                delay = min(delay * 2, 60)
+            continue
+    
+    return last_response
+
+
+def extract_salary_from_text(text):
+    """Extract salary information from job description using LLM (from CareerLens)"""
+    if not text:
+        return None, None
+    
+    text_for_extraction = text[:3000] if len(text) > 3000 else text
+    
+    try:
+        client = AzureOpenAI(
+            azure_endpoint=Config.AZURE_ENDPOINT,
+            api_key=Config.AZURE_API_KEY,
+            api_version=Config.AZURE_API_VERSION
+        )
+        
+        prompt = f"""Extract salary information from this job description text. 
+Look for salary ranges, amounts, and compensation details. Normalize everything to monthly HKD (Hong Kong Dollars).
+
+JOB DESCRIPTION TEXT:
+{text_for_extraction}
+
+Extract and return salary information as JSON with this structure:
+{{
+    "min_salary_hkd_monthly": <number or null>,
+    "max_salary_hkd_monthly": <number or null>,
+    "found": true/false,
+    "raw_text": "the exact salary text found in the description"
+}}
+
+Rules:
+- Convert all amounts to monthly HKD (multiply annual by 12, weekly by 4.33, daily by 22)
+- If only one amount is found, set both min and max to that value
+- If no salary is found, set "found": false and return null for min/max
+- Always return valid JSON, no extra explanation"""
+
+        response = client.chat.completions.create(
+            model=Config.AZURE_MODEL,
+            messages=[
+                {"role": "system", "content": "You are a salary extraction expert. Return only valid JSON."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=300,
+            temperature=0.1,
+            response_format={"type": "json_object"}
+        )
+        
+        content = response.choices[0].message.content
+        salary_data = json.loads(content)
+        
+        if salary_data.get('found', False):
+            min_sal = salary_data.get('min_salary_hkd_monthly')
+            max_sal = salary_data.get('max_salary_hkd_monthly')
+            if min_sal is not None and max_sal is not None:
+                return int(min_sal), int(max_sal)
+            elif min_sal is not None:
+                return int(min_sal), int(min_sal * 1.2)
+        
+        return extract_salary_from_text_regex(text)
+        
+    except Exception as e:
+        return extract_salary_from_text_regex(text)
+
+
+def extract_salary_from_text_regex(text):
+    """Fallback regex-based salary extraction (from CareerLens)"""
+    if not text:
+        return None, None
+    
+    patterns = [
+        r'HKD\s*\$?\s*(\d{1,3}(?:,\d{3})*(?:k|K)?)\s*[-–—]\s*\$?\s*(\d{1,3}(?:,\d{3})*(?:k|K)?)',
+        r'(\d{1,3}(?:,\d{3})*(?:k|K)?)\s*[-–—]\s*(\d{1,3}(?:,\d{3})*(?:k|K)?)\s*HKD',
+        r'HKD\s*\$?\s*(\d{1,3}(?:,\d{3})*(?:k|K)?)\s*(?:per month|/month|/mth|monthly)',
+        r'(\d{1,3}(?:,\d{3})*(?:k|K)?)\s*HKD\s*(?:per month|/month|/mth|monthly)',
+        r'\$\s*(\d{1,3}(?:,\d{3})*(?:k|K)?)\s*[-–—]\s*\$?\s*(\d{1,3}(?:,\d{3})*(?:k|K)?)',
+    ]
+    
+    for pattern in patterns:
+        matches = re.findall(pattern, text, re.IGNORECASE)
+        if matches:
+            match = matches[0]
+            if isinstance(match, tuple) and len(match) == 2:
+                min_sal = match[0].replace(',', '').replace('k', '000').replace('K', '000')
+                max_sal = match[1].replace(',', '').replace('k', '000').replace('K', '000')
+                try:
+                    return int(min_sal), int(max_sal)
+                except:
+                    pass
+    
+    return None, None
+
+
+def calculate_salary_band(matched_jobs):
+    """Calculate estimated salary band from matched jobs (from CareerLens)"""
+    salaries = []
+    
+    for result in matched_jobs:
+        job = result.get('job', result)
+        salary_str = job.get('salary', '')
+        if salary_str and salary_str != 'Not specified':
+            min_sal, max_sal = extract_salary_from_text(salary_str)
+            if min_sal and max_sal:
+                salaries.append((min_sal, max_sal))
+        
+        description = job.get('description', '')
+        if description:
+            min_sal, max_sal = extract_salary_from_text_regex(description[:5000])
+            if min_sal and max_sal:
+                salaries.append((min_sal, max_sal))
+    
+    if not salaries:
+        return 45000, 55000
+    
+    avg_min = int(np.mean([s[0] for s in salaries]))
+    avg_max = int(np.mean([s[1] for s in salaries]))
+    
+    return avg_min, avg_max
+
+
+def filter_jobs_by_domains(jobs, target_domains):
+    """Filter jobs by target domains/industries (from CareerLens)"""
+    if not target_domains:
+        return jobs
+    
+    domain_keywords = {
+        'FinTech': ['fintech', 'financial technology', 'blockchain', 'crypto', 'payment', 'banking technology', 'digital banking'],
+        'ESG & Sustainability': ['esg', 'sustainability', 'environmental', 'green', 'carbon', 'climate', 'renewable'],
+        'Data Analytics': ['data analytics', 'data analysis', 'business intelligence', 'bi', 'data science', 'analytics', 'big data'],
+        'Digital Transformation': ['digital transformation', 'digitalization', 'digital strategy', 'innovation'],
+        'Investment Banking': ['investment banking', 'ib', 'm&a', 'mergers', 'acquisitions', 'capital markets', 'equity research'],
+        'Consulting': ['consulting', 'consultant', 'advisory', 'strategy consulting', 'management consulting'],
+        'Technology': ['software', 'technology', 'tech', 'engineering', 'developer', 'programming', 'it'],
+        'Healthcare': ['healthcare', 'medical', 'health', 'hospital', 'clinical', 'pharmaceutical', 'biotech'],
+        'Education': ['education', 'teaching', 'academic', 'university', 'school', 'e-learning', 'edtech'],
+        'Real Estate': ['real estate', 'property', 'realty', 'property management'],
+        'Retail & E-commerce': ['retail', 'e-commerce', 'ecommerce', 'online retail'],
+        'Marketing & Advertising': ['marketing', 'advertising', 'brand', 'digital marketing', 'social media'],
+        'Legal': ['legal', 'law', 'attorney', 'lawyer', 'compliance', 'regulatory'],
+        'Human Resources': ['human resources', 'hr', 'recruitment', 'talent acquisition', 'people operations'],
+        'Operations': ['operations', 'supply chain', 'logistics', 'procurement']
+    }
+    
+    filtered = []
+    for job in jobs:
+        title_lower = job.get('title', '').lower()
+        desc_lower = job.get('description', '').lower()
+        company_lower = job.get('company', '').lower()
+        combined = f"{title_lower} {desc_lower} {company_lower}"
+        
+        for domain in target_domains:
+            keywords = domain_keywords.get(domain, [domain.lower()])
+            if any(keyword.lower() in combined for keyword in keywords):
+                filtered.append(job)
+                break
+    
+    return filtered if filtered else jobs
+
+
+def filter_jobs_by_salary(jobs, min_salary):
+    """Filter jobs by minimum salary expectation (from CareerLens)"""
+    if not min_salary or min_salary <= 0:
+        return jobs
+    
+    filtered = []
+    jobs_without_salary = []
+    
+    for job in jobs:
+        salary_str = job.get('salary', '')
+        description = job.get('description', '')
+        
+        min_sal, max_sal = extract_salary_from_text_regex(salary_str)
+        
+        if not min_sal:
+            min_sal, max_sal = extract_salary_from_text_regex(description)
+        
+        if min_sal:
+            if min_sal >= min_salary or (max_sal and max_sal >= min_salary):
+                filtered.append(job)
+        else:
+            jobs_without_salary.append(job)
+    
+    if filtered:
+        return filtered
+    elif jobs_without_salary:
+        return jobs_without_salary
+    else:
+        return []
+
+
+# ============================================================================
+# RESUME FORMATTERS (from CareerLens)
+# ============================================================================
+
+def set_cell_shading(cell, color):
+    """Set background color for a table cell"""
+    shading_elm = OxmlElement('w:shd')
+    shading_elm.set(qn('w:fill'), color)
+    cell._tc.get_or_add_tcPr().append(shading_elm)
+
+
+def add_horizontal_line(doc, color="2B5797"):
+    """Add a horizontal line to the document"""
+    p = doc.add_paragraph()
+    p.paragraph_format.space_before = Pt(6)
+    p.paragraph_format.space_after = Pt(6)
+    
+    pPr = p._p.get_or_add_pPr()
+    pBdr = OxmlElement('w:pBdr')
+    bottom = OxmlElement('w:bottom')
+    bottom.set(qn('w:val'), 'single')
+    bottom.set(qn('w:sz'), '12')
+    bottom.set(qn('w:space'), '1')
+    bottom.set(qn('w:color'), color)
+    pBdr.append(bottom)
+    pPr.append(pBdr)
+
+
+def generate_docx_from_json(resume_data, filename="resume.docx"):
+    """Generate a modern professional .docx file from structured resume JSON (from CareerLens)"""
+    try:
+        doc = Document()
+        
+        sections = doc.sections
+        for section in sections:
+            section.top_margin = Inches(0.5)
+            section.bottom_margin = Inches(0.5)
+            section.left_margin = Inches(0.6)
+            section.right_margin = Inches(0.6)
+        
+        PRIMARY_COLOR = RGBColor(43, 87, 151)
+        SECONDARY_COLOR = RGBColor(80, 80, 80)
+        ACCENT_COLOR = RGBColor(0, 120, 212)
+        
+        header = resume_data.get('header', {})
+        
+        # Name Header
+        if header.get('name'):
+            name_para = doc.add_paragraph()
+            name_run = name_para.add_run(header['name'].upper())
+            name_run.font.size = Pt(24)
+            name_run.font.bold = True
+            name_run.font.color.rgb = PRIMARY_COLOR
+            name_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            name_para.paragraph_format.space_after = Pt(4)
+        
+        # Professional Title
+        if header.get('title'):
+            title_para = doc.add_paragraph()
+            title_run = title_para.add_run(header['title'])
+            title_run.font.size = Pt(13)
+            title_run.font.color.rgb = SECONDARY_COLOR
+            title_run.font.italic = True
+            title_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            title_para.paragraph_format.space_after = Pt(8)
+        
+        # Contact Info
+        contact_items = []
+        if header.get('email'):
+            contact_items.append(f"✉ {header['email']}")
+        if header.get('phone'):
+            contact_items.append(f"📞 {header['phone']}")
+        if header.get('location'):
+            contact_items.append(f"📍 {header['location']}")
+        if header.get('linkedin'):
+            contact_items.append(f"💼 {header['linkedin']}")
+        
+        if contact_items:
+            contact_para = doc.add_paragraph()
+            contact_text = '  •  '.join(contact_items)
+            contact_run = contact_para.add_run(contact_text)
+            contact_run.font.size = Pt(9)
+            contact_run.font.color.rgb = SECONDARY_COLOR
+            contact_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            contact_para.paragraph_format.space_after = Pt(12)
+        
+        add_horizontal_line(doc, "2B5797")
+        
+        # Professional Summary
+        if resume_data.get('summary'):
+            summary_header = doc.add_paragraph()
+            header_run = summary_header.add_run('PROFESSIONAL SUMMARY')
+            header_run.font.size = Pt(11)
+            header_run.font.bold = True
+            header_run.font.color.rgb = PRIMARY_COLOR
+            
+            summary_para = doc.add_paragraph()
+            summary_run = summary_para.add_run(resume_data['summary'])
+            summary_run.font.size = Pt(10)
+            summary_run.font.color.rgb = SECONDARY_COLOR
+        
+        # Key Skills
+        skills = resume_data.get('skills_highlighted', [])
+        if skills:
+            skills_header = doc.add_paragraph()
+            header_run = skills_header.add_run('KEY SKILLS')
+            header_run.font.size = Pt(11)
+            header_run.font.bold = True
+            header_run.font.color.rgb = PRIMARY_COLOR
+            
+            skills_para = doc.add_paragraph()
+            for i, skill in enumerate(skills):
+                skill_run = skills_para.add_run(f" {skill} ")
+                skill_run.font.size = Pt(9)
+                skill_run.font.color.rgb = PRIMARY_COLOR
+                if i < len(skills) - 1:
+                    separator = skills_para.add_run("  |  ")
+                    separator.font.size = Pt(9)
+                    separator.font.color.rgb = RGBColor(180, 180, 180)
+        
+        # Professional Experience
+        experience = resume_data.get('experience', [])
+        if experience:
+            exp_header = doc.add_paragraph()
+            header_run = exp_header.add_run('PROFESSIONAL EXPERIENCE')
+            header_run.font.size = Pt(11)
+            header_run.font.bold = True
+            header_run.font.color.rgb = PRIMARY_COLOR
+            
+            for exp in experience:
+                job_header = doc.add_paragraph()
+                
+                if exp.get('title'):
+                    title_run = job_header.add_run(exp['title'])
+                    title_run.font.size = Pt(11)
+                    title_run.font.bold = True
+                    title_run.font.color.rgb = RGBColor(50, 50, 50)
+                
+                if exp.get('company'):
+                    company_run = job_header.add_run(f"  |  {exp['company']}")
+                    company_run.font.size = Pt(10)
+                    company_run.font.color.rgb = ACCENT_COLOR
+                
+                if exp.get('dates'):
+                    date_para = doc.add_paragraph()
+                    date_run = date_para.add_run(exp['dates'])
+                    date_run.font.size = Pt(9)
+                    date_run.font.italic = True
+                    date_run.font.color.rgb = SECONDARY_COLOR
+                
+                bullets = exp.get('bullets', [])
+                for bullet in bullets:
+                    if bullet and bullet.strip():
+                        bullet_para = doc.add_paragraph()
+                        bullet_run = bullet_para.add_run("▸  ")
+                        bullet_run.font.size = Pt(9)
+                        bullet_run.font.color.rgb = ACCENT_COLOR
+                        
+                        text_run = bullet_para.add_run(bullet.strip())
+                        text_run.font.size = Pt(10)
+                        text_run.font.color.rgb = SECONDARY_COLOR
+                        bullet_para.paragraph_format.left_indent = Inches(0.25)
+        
+        # Education
+        if resume_data.get('education'):
+            edu_header = doc.add_paragraph()
+            header_run = edu_header.add_run('EDUCATION')
+            header_run.font.size = Pt(11)
+            header_run.font.bold = True
+            header_run.font.color.rgb = PRIMARY_COLOR
+            
+            edu_para = doc.add_paragraph()
+            edu_run = edu_para.add_run(resume_data['education'])
+            edu_run.font.size = Pt(10)
+            edu_run.font.color.rgb = SECONDARY_COLOR
+        
+        # Certifications
+        if resume_data.get('certifications'):
+            cert_header = doc.add_paragraph()
+            header_run = cert_header.add_run('CERTIFICATIONS & ACHIEVEMENTS')
+            header_run.font.size = Pt(11)
+            header_run.font.bold = True
+            header_run.font.color.rgb = PRIMARY_COLOR
+            
+            cert_para = doc.add_paragraph()
+            cert_run = cert_para.add_run(resume_data['certifications'])
+            cert_run.font.size = Pt(10)
+            cert_run.font.color.rgb = SECONDARY_COLOR
+        
+        doc_io = BytesIO()
+        doc.save(doc_io)
+        doc_io.seek(0)
+        return doc_io
+        
+    except Exception as e:
+        st.error(f"Error generating DOCX: {e}")
+        return None
+
+
+def generate_pdf_from_json(resume_data, filename="resume.pdf"):
+    """Generate a professional PDF file from structured resume JSON (from CareerLens)"""
+    if not REPORTLAB_AVAILABLE:
+        st.error("PDF generation requires reportlab. Install with: pip install reportlab")
+        return None
+    
+    try:
+        pdf_io = BytesIO()
+        doc = SimpleDocTemplate(
+            pdf_io, 
+            pagesize=letter,
+            rightMargin=0.5*inch, 
+            leftMargin=0.5*inch,
+            topMargin=0.4*inch, 
+            bottomMargin=0.4*inch
+        )
+        
+        elements = []
+        
+        PRIMARY_COLOR = HexColor('#2B5797')
+        SECONDARY_COLOR = HexColor('#505050')
+        ACCENT_COLOR = HexColor('#0078D4')
+        
+        styles = getSampleStyleSheet()
+        
+        name_style = ParagraphStyle(
+            'NameStyle',
+            parent=styles['Heading1'],
+            fontSize=22,
+            textColor=PRIMARY_COLOR,
+            spaceAfter=4,
+            alignment=TA_CENTER,
+            fontName='Helvetica-Bold'
+        )
+        
+        body_style = ParagraphStyle(
+            'BodyStyle',
+            parent=styles['Normal'],
+            fontSize=10,
+            textColor=SECONDARY_COLOR,
+            spaceAfter=4,
+            alignment=TA_JUSTIFY
+        )
+        
+        section_header_style = ParagraphStyle(
+            'SectionHeader',
+            parent=styles['Heading2'],
+            fontSize=11,
+            textColor=PRIMARY_COLOR,
+            spaceBefore=12,
+            spaceAfter=6,
+            fontName='Helvetica-Bold'
+        )
+        
+        header = resume_data.get('header', {})
+        
+        if header.get('name'):
+            elements.append(Paragraph(header['name'].upper(), name_style))
+        
+        contact_items = []
+        if header.get('email'):
+            contact_items.append(header['email'])
+        if header.get('phone'):
+            contact_items.append(header['phone'])
+        if header.get('location'):
+            contact_items.append(header['location'])
+        
+        if contact_items:
+            contact_style = ParagraphStyle('ContactStyle', parent=styles['Normal'], fontSize=9, textColor=SECONDARY_COLOR, alignment=TA_CENTER)
+            elements.append(Paragraph('  •  '.join(contact_items), contact_style))
+        
+        elements.append(Spacer(1, 0.1*inch))
+        elements.append(HRFlowable(width="100%", thickness=2, color=PRIMARY_COLOR, spaceAfter=0.1*inch))
+        
+        if resume_data.get('summary'):
+            elements.append(Paragraph('PROFESSIONAL SUMMARY', section_header_style))
+            elements.append(Paragraph(resume_data['summary'], body_style))
+        
+        skills = resume_data.get('skills_highlighted', [])
+        if skills:
+            elements.append(Paragraph('KEY SKILLS', section_header_style))
+            skills_text = '  |  '.join(skills)
+            skills_style = ParagraphStyle('SkillsStyle', parent=styles['Normal'], fontSize=9, textColor=PRIMARY_COLOR, alignment=TA_CENTER)
+            elements.append(Paragraph(skills_text, skills_style))
+        
+        experience = resume_data.get('experience', [])
+        if experience:
+            elements.append(Paragraph('PROFESSIONAL EXPERIENCE', section_header_style))
+            
+            for exp in experience:
+                if exp.get('title'):
+                    job_style = ParagraphStyle('JobStyle', parent=styles['Normal'], fontSize=11, textColor=black, fontName='Helvetica-Bold')
+                    elements.append(Paragraph(exp['title'], job_style))
+                
+                if exp.get('company') or exp.get('dates'):
+                    company_style = ParagraphStyle('CompanyStyle', parent=styles['Normal'], fontSize=10, textColor=ACCENT_COLOR)
+                    company_text = f"{exp.get('company', '')}  |  {exp.get('dates', '')}"
+                    elements.append(Paragraph(company_text, company_style))
+                
+                bullets = exp.get('bullets', [])
+                for bullet in bullets:
+                    if bullet and bullet.strip():
+                        bullet_style = ParagraphStyle('BulletStyle', parent=styles['Normal'], fontSize=10, textColor=SECONDARY_COLOR, leftIndent=15)
+                        elements.append(Paragraph(f"▸  {bullet.strip()}", bullet_style))
+                
+                elements.append(Spacer(1, 0.1*inch))
+        
+        if resume_data.get('education'):
+            elements.append(Paragraph('EDUCATION', section_header_style))
+            elements.append(Paragraph(resume_data['education'], body_style))
+        
+        if resume_data.get('certifications'):
+            elements.append(Paragraph('CERTIFICATIONS & ACHIEVEMENTS', section_header_style))
+            elements.append(Paragraph(resume_data['certifications'], body_style))
+        
+        doc.build(elements)
+        pdf_io.seek(0)
+        return pdf_io
+        
+    except Exception as e:
+        st.error(f"Error generating PDF: {e}")
+        return None
+
+
+def format_resume_as_text(resume_data):
+    """Format structured resume JSON as plain text (from CareerLens)"""
+    text = []
+    
+    header = resume_data.get('header', {})
+    
+    if header.get('name'):
+        name = header['name'].upper()
+        text.append("=" * 60)
+        text.append(name.center(60))
+        text.append("=" * 60)
+        text.append("")
+    
+    if header.get('title'):
+        text.append(header['title'].center(60))
+        text.append("")
+    
+    contact = []
+    if header.get('email'):
+        contact.append(header['email'])
+    if header.get('phone'):
+        contact.append(header['phone'])
+    if header.get('location'):
+        contact.append(header['location'])
+    
+    if contact:
+        text.append(' | '.join(contact))
+        text.append("")
+        text.append("-" * 60)
+        text.append("")
+    
+    if resume_data.get('summary'):
+        text.append("PROFESSIONAL SUMMARY")
+        text.append("-" * 25)
+        text.append(resume_data['summary'])
+        text.append("")
+    
+    skills = resume_data.get('skills_highlighted', [])
+    if skills:
+        text.append("KEY SKILLS")
+        text.append("-" * 25)
+        for i in range(0, len(skills), 4):
+            row_skills = skills[i:i+4]
+            text.append("  •  ".join(row_skills))
+        text.append("")
+    
+    experience = resume_data.get('experience', [])
+    if experience:
+        text.append("PROFESSIONAL EXPERIENCE")
+        text.append("-" * 25)
+        for exp in experience:
+            job_line = ""
+            if exp.get('title'):
+                job_line = exp['title']
+            if exp.get('company'):
+                job_line += f" | {exp['company']}"
+            if job_line:
+                text.append(job_line)
+            
+            if exp.get('dates'):
+                text.append(f"    {exp['dates']}")
+            
+            bullets = exp.get('bullets', [])
+            for bullet in bullets:
+                if bullet and bullet.strip():
+                    text.append(f"    ▸ {bullet.strip()}")
+            text.append("")
+    
+    if resume_data.get('education'):
+        text.append("EDUCATION")
+        text.append("-" * 25)
+        text.append(resume_data['education'])
+        text.append("")
+    
+    if resume_data.get('certifications'):
+        text.append("CERTIFICATIONS & ACHIEVEMENTS")
+        text.append("-" * 25)
+        text.append(resume_data['certifications'])
+    
+    return '\n'.join(text)
+
+
+# ============================================================================
+# INDEED JOB SCRAPER (from CareerLens)
+# ============================================================================
+
+class IndeedScraperAPI:
+    """Job scraper using Indeed Scraper API via RapidAPI (from CareerLens)"""
+    def __init__(self, api_key):
+        self.api_key = api_key
+        self.url = "https://indeed-scraper-api.p.rapidapi.com/api/job"
+        self.headers = {
+            'Content-Type': 'application/json',
+            'x-rapidapi-host': 'indeed-scraper-api.p.rapidapi.com',
+            'x-rapidapi-key': api_key
+        }
+        self.rate_limiter = RateLimiter(max_requests_per_minute=3)
+    
+    def search_jobs(self, query, location="Hong Kong", max_rows=15, job_type="fulltime", country="hk"):
+        """Search for jobs using Indeed Scraper API"""
+        payload = {
+            "scraper": {
+                "maxRows": max_rows,
+                "query": query,
+                "location": location,
+                "jobType": job_type,
+                "radius": "50",
+                "sort": "relevance",
+                "fromDays": "7",
+                "country": country
+            }
+        }
+        
+        try:
+            print(f"🔍 Searching Indeed for '{query}' in {location}...")
+            self.rate_limiter.wait_if_needed()
+            
+            def make_request():
+                return requests.post(self.url, headers=self.headers, json=payload, timeout=60)
+            
+            response = api_call_with_retry(make_request, max_retries=3, initial_delay=3)
+            
+            if response and response.status_code == 201:
+                data = response.json()
+                jobs = []
+                
+                if 'returnvalue' in data and 'data' in data['returnvalue']:
+                    job_list = data['returnvalue']['data']
+                    
+                    for job_data in job_list:
+                        parsed_job = self._parse_job(job_data)
+                        if parsed_job:
+                            jobs.append(parsed_job)
+                
+                print(f"✅ Found {len(jobs)} jobs from Indeed")
+                return jobs
+            else:
+                if response:
+                    if response.status_code == 429:
+                        print("❌ Rate limit reached for Indeed API")
+                    else:
+                        print(f"❌ Indeed API Error: {response.status_code}")
+                return []
+                
+        except Exception as e:
+            print(f"❌ Indeed search error: {e}")
+            return []
+    
+    def _parse_job(self, job_data):
+        """Parse job data from API response"""
+        try:
+            location_data = job_data.get('location', {})
+            location = location_data.get('formattedAddressShort') or location_data.get('city', 'Hong Kong')
+            
+            job_types = job_data.get('jobType', [])
+            job_type = ', '.join(job_types) if job_types else 'Full-time'
+            
+            benefits = job_data.get('benefits', [])
+            attributes = job_data.get('attributes', [])
+            
+            full_description = job_data.get('descriptionText', 'No description')
+            description = full_description[:50000] if len(full_description) > 50000 else full_description
+            
+            return {
+                'id': hashlib.md5(f"{job_data.get('title', '')}_{job_data.get('companyName', '')}".encode()).hexdigest()[:12],
+                'title': job_data.get('title', 'N/A'),
+                'company': job_data.get('companyName', 'N/A'),
+                'location': location,
+                'description': description,
+                'salary': 'Not specified',
+                'job_type': job_type,
+                'url': job_data.get('jobUrl', '#'),
+                'posted_date': job_data.get('age', 'Recently'),
+                'benefits': benefits[:5],
+                'skills': attributes[:10],
+                'company_rating': job_data.get('rating', {}).get('rating', 0),
+                'is_remote': job_data.get('isRemote', False)
+            }
+        except:
+            return None
 
 
 # ============================================================================
@@ -31,7 +866,7 @@ Config.setup()
 # ============================================================================
 
 class ResumeParser:
-    """Parse resume from PDF or DOCX - Let GPT-4 extract skills"""
+    """Parse resume from PDF, DOCX, or TXT - Let GPT-4 extract skills"""
     
     def __init__(self):
         pass
@@ -58,14 +893,25 @@ class ResumeParser:
         except Exception as e:
             raise Exception(f"Error reading DOCX: {str(e)}")
     
+    def extract_text_from_txt(self, txt_file) -> str:
+        """Extract text from TXT file object (from CareerLens)"""
+        try:
+            txt_file.seek(0)
+            text = str(txt_file.read(), "utf-8")
+            return text
+        except Exception as e:
+            raise Exception(f"Error reading TXT: {str(e)}")
+    
     def extract_text(self, file_obj, filename: str) -> str:
-        """Extract text from uploaded file"""
+        """Extract text from uploaded file (extended to support TXT)"""
         if filename.lower().endswith('.pdf'):
             return self.extract_text_from_pdf(file_obj)
         elif filename.lower().endswith('.docx'):
             return self.extract_text_from_docx(file_obj)
+        elif filename.lower().endswith('.txt'):
+            return self.extract_text_from_txt(file_obj)
         else:
-            raise ValueError("Unsupported file format. Use PDF or DOCX.")
+            raise ValueError("Unsupported file format. Use PDF, DOCX, or TXT.")
     
     def parse_resume(self, file_obj, filename: str) -> Dict:
         """Parse resume and extract raw text only"""
@@ -86,6 +932,297 @@ class ResumeParser:
             
         except Exception as e:
             raise Exception(f"Error parsing resume: {str(e)}")
+
+
+# ============================================================================
+# ENHANCED PROFILE EXTRACTION (from CareerLens)
+# ============================================================================
+
+def extract_relevant_resume_sections(resume_text):
+    """Extract Experience and Education sections from resume to reduce token usage (from CareerLens)"""
+    if not resume_text:
+        return ""
+    
+    experience_keywords = [
+        r'experience', r'work experience', r'employment', r'employment history',
+        r'professional experience', r'work history', r'career history', r'positions held'
+    ]
+    education_keywords = [
+        r'education', r'academic background', r'academic qualifications',
+        r'educational background', r'qualifications', r'degrees'
+    ]
+    
+    lines = resume_text.split('\n')
+    relevant_sections = []
+    current_section = None
+    in_experience = False
+    in_education = False
+    
+    for i, line in enumerate(lines):
+        line_stripped = line.strip()
+        if not line_stripped:
+            continue
+        
+        line_lower = line_stripped.lower()
+        
+        if any(re.search(rf'\b{kw}\b', line_lower) for kw in experience_keywords):
+            if not in_experience:
+                in_experience = True
+                in_education = False
+                if current_section:
+                    relevant_sections.append(current_section)
+                current_section = line + '\n'
+            continue
+        
+        if any(re.search(rf'\b{kw}\b', line_lower) for kw in education_keywords):
+            if not in_education:
+                in_education = True
+                if current_section:
+                    relevant_sections.append(current_section)
+                current_section = line + '\n'
+            continue
+        
+        major_sections = [r'summary', r'objective', r'skills', r'certifications', 
+                         r'awards', r'publications', r'projects', r'contact', r'personal']
+        if any(re.search(rf'\b{section}\b', line_lower) for section in major_sections):
+            if in_experience or in_education:
+                if current_section:
+                    relevant_sections.append(current_section)
+                current_section = None
+                in_experience = False
+                in_education = False
+            continue
+        
+        if in_experience or in_education:
+            if current_section:
+                current_section += line + '\n'
+    
+    if current_section and (in_experience or in_education):
+        relevant_sections.append(current_section)
+    
+    result = '\n'.join(relevant_sections)
+    
+    if not result or len(result) < 100:
+        date_pattern = r'\b(19|20)\d{2}\b|\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}'
+        result_lines = []
+        for line in lines:
+            if re.search(date_pattern, line, re.IGNORECASE):
+                result_lines.append(line)
+            elif result_lines:
+                if len([l for l in result_lines[-3:] if l.strip()]) < 3:
+                    result_lines.append(line)
+                else:
+                    break
+        if result_lines:
+            result = '\n'.join(result_lines[:50])
+    
+    if result:
+        return result[:2000] if len(result) > 2000 else result
+    
+    return ""
+
+
+def extract_structured_profile(resume_text, enable_verification=False):
+    """Extract structured profile from resume with optional two-pass verification (from CareerLens)"""
+    try:
+        client = AzureOpenAI(
+            azure_endpoint=Config.AZURE_ENDPOINT,
+            api_key=Config.AZURE_API_KEY,
+            api_version=Config.AZURE_API_VERSION
+        )
+        
+        # FIRST PASS: Initial extraction
+        prompt_pass1 = f"""You are an expert at parsing resumes. Extract structured information from the following resume text.
+
+RESUME TEXT:
+{resume_text[:6000]}
+
+Please extract and return the following information in JSON format:
+{{
+    "name": "Full name",
+    "email": "Email address",
+    "phone": "Phone number",
+    "location": "City, State/Country",
+    "linkedin": "LinkedIn URL if mentioned",
+    "portfolio": "Portfolio/website URL if mentioned",
+    "summary": "Professional summary or objective (2-3 sentences)",
+    "experience": "Work experience with job titles, companies, dates, and achievements",
+    "education": "Education details including degrees, institutions, and graduation dates",
+    "skills": "Comma-separated list of technical and soft skills",
+    "certifications": "Professional certifications, awards, or achievements"
+}}
+
+Important:
+- If information is not found, use "N/A" or empty string
+- Extract all relevant skills mentioned
+- Keep the summary concise but informative
+- Return ONLY valid JSON, no additional text"""
+        
+        print("🤖 Pass 1: Extracting profile information...")
+        response_pass1 = client.chat.completions.create(
+            model=Config.AZURE_MODEL,
+            messages=[
+                {"role": "system", "content": "You are a resume parser. Extract structured information and return only valid JSON."},
+                {"role": "user", "content": prompt_pass1}
+            ],
+            max_tokens=2000,
+            temperature=0.3,
+            response_format={"type": "json_object"}
+        )
+        
+        content_pass1 = response_pass1.choices[0].message.content
+        profile_data_pass1 = json.loads(content_pass1)
+        
+        if not enable_verification:
+            print("✅ Profile extraction complete (single pass)")
+            return profile_data_pass1
+        
+        # SECOND PASS: Self-correction (optional)
+        relevant_sections = extract_relevant_resume_sections(resume_text)
+        
+        if relevant_sections:
+            resume_context = f"""RELEVANT RESUME SECTIONS (Experience and Education only):
+{relevant_sections}"""
+        else:
+            resume_context = f"""RELEVANT RESUME SECTIONS (limited):
+{resume_text[:1500]}"""
+        
+        prompt_pass2 = f"""You are a resume quality checker. Review the extracted profile data against the relevant resume sections and verify accuracy, especially for dates and company names.
+
+{resume_context}
+
+EXTRACTED PROFILE DATA (from first pass):
+{json.dumps(profile_data_pass1, indent=2)}
+
+Please review and correct the extracted data, paying special attention to:
+1. **Dates** - Verify all employment dates, education dates, and certification dates are accurate
+2. **Company Names** - Verify all company/organization names are spelled correctly
+3. **Job Titles** - Verify job titles are accurate
+4. **Education Institutions** - Verify institution names are correct
+
+Return the corrected profile data in the same JSON format. If everything is correct, return the data as-is.
+
+Return ONLY valid JSON, no additional text."""
+        
+        print("🔍 Pass 2: Verifying profile data...")
+        response_pass2 = client.chat.completions.create(
+            model=Config.AZURE_MODEL,
+            messages=[
+                {"role": "system", "content": "You are a resume quality checker. Verify and correct extracted data. Return only valid JSON."},
+                {"role": "user", "content": prompt_pass2}
+            ],
+            max_tokens=2000,
+            temperature=0.1,
+            response_format={"type": "json_object"}
+        )
+        
+        content_pass2 = response_pass2.choices[0].message.content
+        profile_data_corrected = json.loads(content_pass2)
+        print("✅ Profile extraction complete (two-pass verification)")
+        return profile_data_corrected
+        
+    except Exception as e:
+        print(f"❌ Profile extraction error: {e}")
+        return None
+
+
+def generate_tailored_resume(user_profile, job_posting, raw_resume_text=None):
+    """Generate a tailored resume based on user profile and job posting (from CareerLens)"""
+    try:
+        client = AzureOpenAI(
+            azure_endpoint=Config.AZURE_ENDPOINT,
+            api_key=Config.AZURE_API_KEY,
+            api_version=Config.AZURE_API_VERSION
+        )
+        
+        system_instructions = """You are an expert resume writer with expertise in ATS optimization and career coaching.
+Your task is to create a tailored resume by analyzing the job description and adapting the user's profile.
+Return ONLY valid JSON - no markdown, no additional text, no code blocks."""
+
+        job_description = f"""JOB POSTING TO MATCH:
+Title: {job_posting.get('title', 'N/A')}
+Company: {job_posting.get('company', 'N/A')}
+Description: {job_posting.get('description', 'N/A')[:3000]}
+Required Skills: {', '.join(job_posting.get('skills', [])[:10]) if job_posting.get('skills') else 'N/A'}"""
+
+        structured_profile = f"""STRUCTURED PROFILE:
+Name: {user_profile.get('name', 'N/A')}
+Email: {user_profile.get('email', 'N/A')}
+Phone: {user_profile.get('phone', 'N/A')}
+Location: {user_profile.get('location', 'N/A')}
+LinkedIn: {user_profile.get('linkedin', 'N/A')}
+Summary: {user_profile.get('summary', 'N/A')}
+Experience: {user_profile.get('experience', 'N/A')[:2000]}
+Education: {user_profile.get('education', 'N/A')}
+Skills: {user_profile.get('skills', 'N/A')}
+Certifications: {user_profile.get('certifications', 'N/A')}"""
+
+        raw_resume_section = ""
+        if raw_resume_text:
+            raw_resume_section = f"\n\nORIGINAL RESUME TEXT (for reference):\n{raw_resume_text[:2000]}"
+
+        prompt = f"""{system_instructions}
+
+{job_description}
+
+{structured_profile}{raw_resume_section}
+
+INSTRUCTIONS:
+1. Analyze the job posting and identify key skills, technologies, and qualifications needed
+2. Tailor the profile to match by:
+   - Rewriting the summary to emphasize relevant experience
+   - Highlighting skills that match job requirements
+   - Rewriting experience bullet points to emphasize relevant achievements
+   - Using keywords from the job description for ATS optimization
+3. Focus on achievements and measurable results
+4. Maintain accuracy - only use information from the provided profile
+
+Return your response as a JSON object with this structure:
+{{
+  "header": {{
+    "name": "Full Name",
+    "title": "Professional Title (tailored to job)",
+    "email": "email@example.com",
+    "phone": "phone number",
+    "location": "City, State/Country",
+    "linkedin": "LinkedIn URL or empty string"
+  }},
+  "summary": "2-3 sentence professional summary tailored to the job",
+  "skills_highlighted": ["Skill 1", "Skill 2", "Skill 3", ...],
+  "experience": [
+    {{
+      "company": "Company Name",
+      "title": "Job Title",
+      "dates": "Date Range",
+      "bullets": ["Achievement bullet 1...", "Achievement bullet 2..."]
+    }}
+  ],
+  "education": "Education details",
+  "certifications": "Certifications and achievements"
+}}
+
+Return ONLY the JSON object."""
+        
+        print("✨ Generating tailored resume...")
+        response = client.chat.completions.create(
+            model=Config.AZURE_MODEL,
+            messages=[
+                {"role": "system", "content": system_instructions},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=3000,
+            temperature=0.7,
+            response_format={"type": "json_object"}
+        )
+        
+        content = response.choices[0].message.content
+        resume_data = json.loads(content)
+        print("✅ Tailored resume generated!")
+        return resume_data
+        
+    except Exception as e:
+        print(f"❌ Resume generation error: {e}")
+        return None
 
 
 # ============================================================================

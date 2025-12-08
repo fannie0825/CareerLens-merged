@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 import numpy as np
 import json
 from typing import List, Dict
+from io import BytesIO
 
 from backend import JobSeekerBackend
 from backend import LinkedInJobSearcher
@@ -19,6 +20,21 @@ from backend import show_instructions
 from backend import get_jobs_for_interview
 from backend import get_job_seeker_profile
 from backend import ai_interview_page
+
+# CareerLens imports
+from backend import (
+    TokenUsageTracker,
+    filter_jobs_by_domains,
+    filter_jobs_by_salary,
+    calculate_salary_band,
+    extract_salary_from_text,
+    IndeedScraperAPI,
+    extract_structured_profile,
+    generate_tailored_resume,
+    generate_docx_from_json,
+    generate_pdf_from_json,
+    format_resume_as_text
+)
 
 from database import JobSeekerDB
 from database import HeadhunterDB
@@ -35,6 +51,260 @@ from config import Config
 
 import json
 from datetime import datetime
+
+# Initialize token tracker in session state
+if 'token_tracker' not in st.session_state:
+    st.session_state.token_tracker = TokenUsageTracker()
+
+
+# ============================================================================
+# CAREERLENS DASHBOARD FEATURES
+# ============================================================================
+
+def display_skill_matching_matrix(user_profile):
+    """Display skill matching calculation matrix (from CareerLens)"""
+    st.markdown("---")
+    st.markdown("### 📊 How Job Ranking Works")
+    
+    user_skills = user_profile.get('hard_skills', '') if user_profile else ''
+    if not user_skills:
+        user_skills = user_profile.get('skills', '') if user_profile else ''
+    
+    if not user_skills:
+        st.info("💡 **Skill-Based Ranking**: Jobs are ranked by how many required skills you match. Upload your CV to see your skills analyzed.")
+        return
+    
+    user_skills_list = [s.strip() for s in str(user_skills).split(',') if s.strip()]
+    
+    if not user_skills_list:
+        st.info("💡 **Skill-Based Ranking**: Jobs are ranked by how many required skills you match.")
+        return
+    
+    st.markdown("#### Your Skills")
+    skills_display = ", ".join(user_skills_list[:10])
+    if len(user_skills_list) > 10:
+        skills_display += f" (+{len(user_skills_list) - 10} more)"
+    st.markdown(f"**{len(user_skills_list)} skills identified:** {skills_display}")
+    
+    st.markdown("---")
+    
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.markdown("""
+        **Ranking Formula:**
+        
+        ```
+        Skill Match Score = Matched Skills / Required Skills
+        ```
+        
+        **Example:**
+        - Job requires: Python, SQL, React, Docker
+        - You have: Python, SQL, React
+        - **Score: 3/4 = 75%**
+        """)
+    
+    with col2:
+        st.markdown("""
+        **Ranking Logic:**
+        
+        1. ✅ Jobs are fetched from job boards
+        2. 🔍 Your skills are matched against each job
+        3. 📊 Jobs sorted by match score (highest first)
+        4. 🎯 Top matches appear at the top
+        """)
+
+
+def display_market_positioning_dashboard(matched_jobs, user_profile):
+    """Display Dashboard with 3 key metric cards (from CareerLens)"""
+    if not matched_jobs:
+        return
+    
+    # Calculate average match score
+    avg_match_score = 0
+    for result in matched_jobs:
+        if isinstance(result, dict):
+            score = result.get('combined_score', result.get('combined_match_score', 0))
+            avg_match_score += score
+    avg_match_score = avg_match_score / len(matched_jobs) if matched_jobs else 0
+    
+    # Normalize score if it's already a percentage
+    if avg_match_score > 1:
+        match_score_pct = int(avg_match_score)
+    else:
+        match_score_pct = int(avg_match_score * 100)
+    
+    if match_score_pct >= 80:
+        match_delta = "Excellent fit"
+    elif match_score_pct >= 60:
+        match_delta = "Good fit"
+    else:
+        match_delta = "Room to improve"
+    
+    # Calculate salary band
+    salary_min, salary_max = calculate_salary_band(matched_jobs)
+    avg_salary = (salary_min + salary_max) // 2
+    
+    # Calculate skill gaps
+    user_skills = user_profile.get('hard_skills', '') or user_profile.get('skills', '')
+    all_job_skills = []
+    for result in matched_jobs:
+        job = result.get('job', result)
+        job_skills = job.get('skills', []) or job.get('matched_skills', [])
+        all_job_skills.extend(job_skills)
+    
+    user_skills_list = [s.lower().strip() for s in str(user_skills).split(',') if s.strip()]
+    skill_gaps = set()
+    for job_skill in all_job_skills:
+        if isinstance(job_skill, str):
+            job_skill_lower = job_skill.lower().strip()
+            if job_skill_lower and not any(us in job_skill_lower or job_skill_lower in us for us in user_skills_list):
+                skill_gaps.add(job_skill_lower)
+    
+    num_skill_gaps = min(len(skill_gaps), 20)  # Cap at 20
+    
+    if num_skill_gaps <= 3:
+        gap_delta = "Well positioned"
+    elif num_skill_gaps <= 7:
+        gap_delta = "Some upskilling needed"
+    else:
+        gap_delta = "Focus on learning"
+    
+    st.markdown("### 📊 Your Market Position Dashboard")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric("🎯 Match Score", f"{match_score_pct}%", match_delta)
+    
+    with col2:
+        st.metric("💰 Est. Salary", f"HKD {avg_salary // 1000}k", "Market rate")
+    
+    with col3:
+        st.metric("📈 Skill Gaps", f"{num_skill_gaps}", gap_delta)
+    
+    # Show top skill gaps if any
+    if skill_gaps:
+        with st.expander("🔧 Top Skills to Develop"):
+            gap_list = list(skill_gaps)[:10]
+            cols = st.columns(2)
+            for i, skill in enumerate(gap_list):
+                with cols[i % 2]:
+                    st.write(f"• {skill}")
+
+
+def display_resume_generator_ui(job, user_profile, resume_text=None):
+    """Display Resume Tailoring UI (from CareerLens)"""
+    st.subheader("✨ AI Resume Tailoring")
+    
+    st.info(f"**Tailoring resume for:** {job.get('title', 'Unknown')} at {job.get('company', 'Unknown')}")
+    
+    if st.button("🚀 Generate Tailored Resume", type="primary", use_container_width=True):
+        with st.spinner("✨ AI is tailoring your resume..."):
+            resume_data = generate_tailored_resume(user_profile, job, resume_text)
+            
+            if resume_data:
+                st.success("✅ Tailored resume generated!")
+                st.session_state.generated_resume = resume_data
+                
+                # Display preview
+                st.markdown("### 📄 Resume Preview")
+                
+                header = resume_data.get('header', {})
+                st.markdown(f"**{header.get('name', 'Your Name')}**")
+                st.markdown(f"*{header.get('title', 'Professional')}*")
+                
+                if resume_data.get('summary'):
+                    st.markdown("**Summary:**")
+                    st.write(resume_data['summary'])
+                
+                skills = resume_data.get('skills_highlighted', [])
+                if skills:
+                    st.markdown("**Key Skills:**")
+                    st.write(", ".join(skills[:10]))
+                
+                # Download buttons
+                st.markdown("### 📥 Download Options")
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    docx_file = generate_docx_from_json(resume_data)
+                    if docx_file:
+                        st.download_button(
+                            "📄 Download DOCX",
+                            docx_file,
+                            file_name="tailored_resume.docx",
+                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        )
+                
+                with col2:
+                    pdf_file = generate_pdf_from_json(resume_data)
+                    if pdf_file:
+                        st.download_button(
+                            "📑 Download PDF",
+                            pdf_file,
+                            file_name="tailored_resume.pdf",
+                            mime="application/pdf"
+                        )
+                
+                with col3:
+                    text_content = format_resume_as_text(resume_data)
+                    st.download_button(
+                        "📝 Download TXT",
+                        text_content,
+                        file_name="tailored_resume.txt",
+                        mime="text/plain"
+                    )
+            else:
+                st.error("❌ Failed to generate resume. Please try again.")
+
+
+def display_domain_filter_ui():
+    """Display domain/industry filter UI (from CareerLens)"""
+    st.markdown("### 🏭 Filter by Industry")
+    
+    target_domains = st.multiselect(
+        "Target Domains",
+        options=["FinTech", "ESG & Sustainability", "Data Analytics", "Digital Transformation", 
+                "Investment Banking", "Consulting", "Technology", "Healthcare", "Education",
+                "Real Estate", "Retail & E-commerce", "Marketing & Advertising", "Legal", 
+                "Human Resources", "Operations"],
+        default=st.session_state.get('target_domains', []),
+        help="Select industries/domains to search for jobs",
+        key="domain_filter"
+    )
+    st.session_state.target_domains = target_domains
+    
+    salary_expectation = st.slider(
+        "Min. Monthly Salary (HKD)",
+        min_value=0,
+        max_value=150000,
+        value=st.session_state.get('salary_expectation', 0),
+        step=5000,
+        help="Set to 0 to disable salary filtering",
+        key="salary_filter"
+    )
+    st.session_state.salary_expectation = salary_expectation
+    
+    return target_domains, salary_expectation
+
+
+def display_token_usage():
+    """Display token usage and cost tracking (from CareerLens)"""
+    if 'token_tracker' in st.session_state:
+        tracker = st.session_state.token_tracker
+        summary = tracker.get_summary()
+        
+        if summary['total_tokens'] > 0:
+            with st.expander("📊 API Usage Stats"):
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Total Tokens", f"{summary['total_tokens']:,}")
+                with col2:
+                    st.metric("Embedding Tokens", f"{summary['embedding_tokens']:,}")
+                with col3:
+                    st.metric("Est. Cost", f"${summary['estimated_cost_usd']:.4f}")
+
 
 def create_enhanced_visualizations(matched_jobs: List[Dict], job_seeker_data: Dict = None):
     """Create enhanced visualizations for job matching analysis"""
@@ -1056,22 +1326,49 @@ def job_recommendations_page(job_seeker_id=None):
                             key=f"desc_{job.get('id', i)}"
                         )
 
-                    # Apply link
-                    job_url = job.get("url", "")
-                    if job_url:
-                        st.link_button(
-                            "🔗 Apply Now on LinkedIn",
-                            job_url,
-                            use_container_width=True,
-                            type="primary"
+                    # Action buttons
+                    col_btn1, col_btn2 = st.columns(2)
+                    
+                    with col_btn1:
+                        # Apply link
+                        job_url = job.get("url", "")
+                        if job_url:
+                            st.link_button(
+                                "🔗 Apply Now",
+                                job_url,
+                                use_container_width=True,
+                                type="primary"
+                            )
+                        else:
+                            st.info("🔗 Link not available")
+                    
+                    with col_btn2:
+                        # Resume tailoring button
+                        if st.button("✨ Tailor Resume", key=f"tailor_{job.get('id', i)}", use_container_width=True):
+                            st.session_state.selected_job_for_resume = job
+                            st.session_state.show_resume_generator = True
+                
+                # Show resume generator if selected
+                if st.session_state.get('show_resume_generator') and st.session_state.get('selected_job_for_resume', {}).get('id') == job.get('id'):
+                    with st.container():
+                        st.markdown("---")
+                        display_resume_generator_ui(
+                            job, 
+                            job_seeker_data,
+                            resume_text=st.session_state.get('resume_text')
                         )
-                    else:
-                        st.info("🔗 Application link not available")
+                        if st.button("❌ Close Resume Generator", key=f"close_resume_{job.get('id', i)}"):
+                            st.session_state.show_resume_generator = False
+                            st.session_state.selected_job_for_resume = None
+                            st.rerun()
 
         else:
             st.warning("⚠️ No matched jobs found. Please try adjusting your search criteria.")
             
     if matched_jobs and len(matched_jobs) > 0:
+        # Display CareerLens Market Positioning Dashboard
+        display_market_positioning_dashboard(matched_jobs, job_seeker_data)
+        
         # Create enhanced visualizations
         create_enhanced_visualizations(matched_jobs, job_seeker_data)
         
@@ -1585,8 +1882,36 @@ def show_interview_instructions():
     **Tip**: Please ensure use in stable network environment for AI to generate questions and evaluate answers normally.
     """)
 
-# Add debug tools in sidebar
+# Add CareerLens tools in sidebar
 with st.sidebar:
+    st.markdown("---")
+    st.subheader("🔍 CareerLens Tools")
+    
+    # Display domain filter
+    if st.session_state.current_page == "job_recommendations":
+        with st.expander("🏭 Industry Filters", expanded=False):
+            target_domains = st.multiselect(
+                "Target Domains",
+                options=["FinTech", "ESG & Sustainability", "Data Analytics", "Digital Transformation", 
+                        "Investment Banking", "Consulting", "Technology", "Healthcare", "Education"],
+                default=st.session_state.get('target_domains', []),
+                key="sidebar_domain_filter"
+            )
+            st.session_state.target_domains = target_domains
+            
+            salary_exp = st.slider(
+                "Min. Salary (HKD)",
+                min_value=0,
+                max_value=150000,
+                value=st.session_state.get('salary_expectation', 0),
+                step=5000,
+                key="sidebar_salary_filter"
+            )
+            st.session_state.salary_expectation = salary_exp
+    
+    # Display token usage
+    display_token_usage()
+    
     st.markdown("---")
     st.subheader("🔧 Database Debug")
     
