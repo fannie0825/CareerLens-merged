@@ -9,10 +9,10 @@ An AI-powered career intelligence platform built with Streamlit, combining job m
 ### Core Pages
 - **🏠 Job Seeker**: Upload CV, GPT-4 analysis, auto-fill profile forms
 - **💼 Job Match**: AI-matched positions with Pinecone vector search
-- **🎯 Recruiter**: Post jobs and manage recruitment positions
-- **🔍 Recruitment Match**: Match candidates to job openings
 - **🤖 AI Interview**: Mock interviews and skill assessment
 - **📊 Market Dashboard**: CareerLens modular dashboard view
+- **🎯 Recruiter**: Post jobs and manage recruitment positions
+- **🔍 Recruitment Match**: Match candidates to job openings
 
 ### CareerLens Features
 - **Market Positioning Dashboard**: See your match score, estimated salary, and skill gaps

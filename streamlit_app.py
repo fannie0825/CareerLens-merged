@@ -2114,19 +2114,19 @@ with st.sidebar:
 # Sidebar navigation
 st.sidebar.title("🔍 Navigation")
 
-# Navigation buttons
+# Navigation buttons (ordered: 1-2-5-6-3-4)
 if st.sidebar.button("🏠 Job Seeker", use_container_width=True, key="main_btn"):
     st.session_state.current_page = "main"
 if st.sidebar.button("💼 Job Match", use_container_width=True):
     st.session_state.current_page = "job_recommendations"
-if st.sidebar.button("🎯 Recruiter", use_container_width=True):
-        st.session_state.current_page = "head_hunter"
-if st.sidebar.button("🔍 Recruitment Match", use_container_width=True):
-        st.session_state.current_page = "recruitment_match"
 if st.sidebar.button("🤖 AI Interview", use_container_width=True):
-        st.session_state.current_page = "ai_interview"
+    st.session_state.current_page = "ai_interview"
 if st.sidebar.button("📊 Market Dashboard", use_container_width=True):
-        st.session_state.current_page = "market_dashboard"
+    st.session_state.current_page = "market_dashboard"
+if st.sidebar.button("🎯 Recruiter", use_container_width=True):
+    st.session_state.current_page = "head_hunter"
+if st.sidebar.button("🔍 Recruitment Match", use_container_width=True):
+    st.session_state.current_page = "recruitment_match"
 
 # Page routing
 if st.session_state.current_page == "main":
@@ -2164,10 +2164,10 @@ st.sidebar.markdown("""
 
 1. **Job Seeker**: Fill information → Automatic job recommendations
 2. **Job Match**: View AI-matched positions
-3. **Recruiter**: Publish and manage recruitment positions
-4. **Recruitment Match**: Smart candidate-position matching
-5. **AI Interview**: Mock interviews and skill assessment
-6. **Market Dashboard**: CareerLens modular dashboard view
+3. **AI Interview**: Mock interviews and skill assessment
+4. **Market Dashboard**: CareerLens modular dashboard view
+5. **Recruiter**: Publish and manage recruitment positions
+6. **Recruitment Match**: Smart candidate-position matching
 """)
                     
 # Footer
