@@ -1,3 +1,33 @@
+"""
+CareerLens - AI Career Intelligence Platform
+Combined application with multi-page navigation and modular dashboard
+
+WebSocket Stability Notes:
+- This application includes multiple mechanisms to prevent WebSocket disconnections:
+  1. Chunked sleep operations to send periodic UI updates
+  2. Keepalive pings during long-running operations
+  3. Progress tracking with automatic connection maintenance
+  4. Optimized server configuration in .streamlit/config.toml
+"""
+import warnings
+import os
+import gc
+import sys
+warnings.filterwarnings('ignore')
+
+# Streamlit Cloud optimization - set before importing streamlit
+os.environ['STREAMLIT_LOG_LEVEL'] = 'error'
+os.environ['SQLITE_TMPDIR'] = '/tmp'
+
+# Disable ALL Streamlit telemetry/analytics to prevent tracking script loads
+# Note: Browser may still show "Tracking Prevention" console messages - this is
+# the browser blocking residual analytics attempts, not an app error
+os.environ['STREAMLIT_BROWSER_GATHER_USAGE_STATS'] = 'false'
+os.environ['STREAMLIT_GLOBAL_DEVELOPMENT_MODE'] = 'false'
+
+# Increase recursion limit for complex operations (prevents stack overflow)
+sys.setrecursionlimit(3000)
+
 import streamlit as st
 import sqlite3
 import pinecone
@@ -570,10 +600,32 @@ def create_job_comparison_radar(matched_jobs: List[Dict]):
 
 # Page config
 st.set_page_config(
-    page_title="Smart Career",
-    page_icon="🎯",
-    layout="wide"
+    page_title="CareerLens",
+    page_icon="🔍",
+    layout="wide",
+    initial_sidebar_state="expanded",
+    menu_items={
+        'About': "CareerLens - AI-powered career intelligence platform"
+    }
 )
+
+# Import modular UI components from modules/ (for Market Dashboard page)
+try:
+    from modules.utils import _cleanup_session_state, validate_secrets
+    from modules.ui.styles import render_styles
+    from modules.ui import (
+        render_sidebar as modular_render_sidebar,
+        render_hero_banner,
+        display_resume_generator as modular_display_resume_generator,
+        display_market_positioning_profile,
+        display_refine_results_section,
+        display_ranked_matches_table,
+        display_match_breakdown
+    )
+    MODULES_AVAILABLE = True
+except ImportError as e:
+    MODULES_AVAILABLE = False
+    # Modules not available - Market Dashboard page will be disabled
 
 # Initialize backend
 @st.cache_resource
@@ -591,10 +643,66 @@ init_head_hunter_database()
 if 'current_page' not in st.session_state:
     st.session_state.current_page = "main"
 
+# Additional session state for modular dashboard
+if 'search_history' not in st.session_state:
+    st.session_state.search_history = []
+if 'jobs_cache' not in st.session_state:
+    st.session_state.jobs_cache = {}
+if 'user_profile' not in st.session_state:
+    st.session_state.user_profile = {}
+if 'generated_resume' not in st.session_state:
+    st.session_state.generated_resume = None
+if 'selected_job' not in st.session_state:
+    st.session_state.selected_job = None
+if 'show_resume_generator' not in st.session_state:
+    st.session_state.show_resume_generator = False
+if 'resume_text' not in st.session_state:
+    st.session_state.resume_text = None
+if 'resume_embedding' not in st.session_state:
+    st.session_state.resume_embedding = None
+if 'matched_jobs' not in st.session_state:
+    st.session_state.matched_jobs = []
+if 'match_score' not in st.session_state:
+    st.session_state.match_score = None
+if 'missing_keywords' not in st.session_state:
+    st.session_state.missing_keywords = None
+if 'show_profile_editor' not in st.session_state:
+    st.session_state.show_profile_editor = False
+if 'use_auto_match' not in st.session_state:
+    st.session_state.use_auto_match = False
+if 'expanded_job_index' not in st.session_state:
+    st.session_state.expanded_job_index = None
+if 'industry_filter' not in st.session_state:
+    st.session_state.industry_filter = None
+if 'salary_min' not in st.session_state:
+    st.session_state.salary_min = None
+if 'salary_max' not in st.session_state:
+    st.session_state.salary_max = None
+if 'selected_job_index' not in st.session_state:
+    st.session_state.selected_job_index = None
+if 'dashboard_ready' not in st.session_state:
+    st.session_state.dashboard_ready = False
+if 'user_skills_embeddings_cache' not in st.session_state:
+    st.session_state.user_skills_embeddings_cache = {}
+if 'skill_embeddings_cache' not in st.session_state:
+    st.session_state.skill_embeddings_cache = {}
+
+# Limit search history size
+MAX_SEARCH_HISTORY = 20
+if len(st.session_state.search_history) > MAX_SEARCH_HISTORY:
+    st.session_state.search_history = st.session_state.search_history[-MAX_SEARCH_HISTORY:]
+
+# Run memory cleanup after session state is initialized (if modules available)
+if MODULES_AVAILABLE:
+    try:
+        _cleanup_session_state()
+    except Exception:
+        pass
+
 # APP UI
 def main_analyzer_page():
-    """Main Page - Smart Career"""
-    st.title("🎯 Smart Career")
+    """Main Page - CareerLens"""
+    st.title("🔍 CareerLens")
     st.markdown("Upload your CV and let **GPT-4** find matching jobs globally, ranked by match quality!")
 
     # Define helper functions
@@ -1882,6 +1990,72 @@ def show_interview_instructions():
     **Tip**: Please ensure use in stable network environment for AI to generate questions and evaluate answers normally.
     """)
 
+
+def market_dashboard_page():
+    """Market Dashboard Page - Modular CareerLens Dashboard (from app_new.py)"""
+    if not MODULES_AVAILABLE:
+        st.error("❌ Market Dashboard modules are not available. Please ensure the modules/ directory is properly installed.")
+        st.info("The Market Dashboard requires the modular UI components from the modules/ directory.")
+        return
+    
+    try:
+        # Render CSS styles
+        render_styles()
+        
+        # Check if resume generator should be shown
+        if st.session_state.get('show_resume_generator', False):
+            modular_display_resume_generator()
+            return
+        
+        # Render modular sidebar with controls
+        modular_render_sidebar()
+        
+        # Render hero banner at the top of main content
+        render_hero_banner(
+            st.session_state.user_profile if st.session_state.user_profile else {},
+            st.session_state.matched_jobs if st.session_state.get('dashboard_ready', False) else None
+        )
+        
+        # Main dashboard area - only show after analysis
+        if not st.session_state.get('dashboard_ready', False) or not st.session_state.matched_jobs:
+            st.info("👆 Upload your CV in the sidebar and click 'Analyze Profile & Find Matches' to see your market positioning and ranked opportunities.")
+            return
+        
+        # Display Market Positioning Profile (Top Section)
+        display_market_positioning_profile(
+            st.session_state.matched_jobs,
+            st.session_state.user_profile
+        )
+        
+        # Display Refine Results Section
+        display_refine_results_section(
+            st.session_state.matched_jobs,
+            st.session_state.user_profile
+        )
+        
+        # Display Smart Ranked Matches Table (Middle Section)
+        display_ranked_matches_table(
+            st.session_state.matched_jobs,
+            st.session_state.user_profile
+        )
+        
+        # Display Match Breakdown & Application Copilot (Bottom Section)
+        display_match_breakdown(
+            st.session_state.matched_jobs,
+            st.session_state.user_profile
+        )
+    except Exception as e:
+        st.error(f"""
+        ❌ **Dashboard Error**
+        
+        An unexpected error occurred: {e}
+        
+        Please check:
+        1. All required secrets are configured
+        2. All dependencies are installed
+        3. The application logs for more details
+        """)
+
 # Add CareerLens tools in sidebar
 with st.sidebar:
     st.markdown("---")
@@ -1940,17 +2114,19 @@ with st.sidebar:
 # Sidebar navigation
 st.sidebar.title("🔍 Navigation")
 
-# Navigation buttons
+# Navigation buttons (ordered: 1-2-5-6-3-4)
 if st.sidebar.button("🏠 Job Seeker", use_container_width=True, key="main_btn"):
     st.session_state.current_page = "main"
 if st.sidebar.button("💼 Job Match", use_container_width=True):
     st.session_state.current_page = "job_recommendations"
-if st.sidebar.button("🎯 Recruiter", use_container_width=True):
-        st.session_state.current_page = "head_hunter"
-if st.sidebar.button("🔍 Recruitment Match", use_container_width=True):
-        st.session_state.current_page = "recruitment_match"
 if st.sidebar.button("🤖 AI Interview", use_container_width=True):
-        st.session_state.current_page = "ai_interview"
+    st.session_state.current_page = "ai_interview"
+if st.sidebar.button("📊 Market Dashboard", use_container_width=True):
+    st.session_state.current_page = "market_dashboard"
+if st.sidebar.button("🎯 Recruiter", use_container_width=True):
+    st.session_state.current_page = "head_hunter"
+if st.sidebar.button("🔍 Recruitment Match", use_container_width=True):
+    st.session_state.current_page = "recruitment_match"
 
 # Page routing
 if st.session_state.current_page == "main":
@@ -1977,6 +2153,8 @@ elif st.session_state.current_page == "recruitment_match":
     recruitment_match_dashboard()
 elif st.session_state.current_page == "ai_interview":
     ai_interview_dashboard()
+elif st.session_state.current_page == "market_dashboard":
+    market_dashboard_page()
 
 
 # Sidebar information
@@ -1984,18 +2162,17 @@ st.sidebar.markdown("---")
 st.sidebar.markdown("""
 ### 💡 Usage Instructions
 
-1. **Home**: Smart Resume-JD Matching Analyzer
-2. **Job Seeker**: Fill information → Automatic job recommendations
-3. **Job Match**: View AI-matched positions
-4. **Head Hunter**: Publish and manage recruitment positions
-5. **Recruitment Match**: Smart candidate-position matching
-6. **AI Interview**: Mock interviews and skill assessment
-7. **DB Verify**: Verify data storage
+1. **Job Seeker**: Fill information → Automatic job recommendations
+2. **Job Match**: View AI-matched positions
+3. **AI Interview**: Mock interviews and skill assessment
+4. **Market Dashboard**: CareerLens modular dashboard view
+5. **Recruiter**: Publish and manage recruitment positions
+6. **Recruitment Match**: Smart candidate-position matching
 """)
                     
 # Footer
 st.markdown("---")
-st.caption("🤖 Powered by GPT-4, Pinecone Vector Search, and RapidAPI LinkedIn Jobs")
+st.caption("🤖 Powered by GPT-4, Pinecone Vector Search, RapidAPI LinkedIn Jobs, and CareerLens AI")
 
 # Application startup
 if __name__ == "__main__":

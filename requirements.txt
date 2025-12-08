@@ -1,5 +1,5 @@
 # =============================================================================
-# Smart Career / CareerLens - Combined Python Dependencies
+# CareerLens - AI Career Intelligence Platform Dependencies
 # =============================================================================
 # Optimized for Streamlit Cloud deployment
 # All libraries listed are actively used in the codebase
