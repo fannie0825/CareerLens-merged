@@ -57,6 +57,47 @@ except ImportError:
 # Initialize config
 Config.setup()
 
+# ============================================================================
+# CACHED MODEL LOADING - Critical for performance
+# ============================================================================
+
+# Cache the SentenceTransformer model to avoid reloading on every Streamlit rerun
+_cached_model = None
+
+def get_sentence_transformer_model():
+    """Get cached SentenceTransformer model - only loads once"""
+    global _cached_model
+    if _cached_model is None:
+        print("📦 Loading sentence transformer model (first time only)...")
+        _cached_model = SentenceTransformer(Config.MODEL_NAME)
+        print("✅ Model loaded and cached!")
+    return _cached_model
+
+# Cache Pinecone client
+_cached_pinecone = None
+
+def get_pinecone_client():
+    """Get cached Pinecone client - only initializes once"""
+    global _cached_pinecone
+    if _cached_pinecone is None:
+        print("📦 Initializing Pinecone client (first time only)...")
+        _cached_pinecone = Pinecone(api_key=Config.PINECONE_API_KEY)
+        print("✅ Pinecone client cached!")
+    return _cached_pinecone
+
+# Cache LinkedInJobSearcher
+_cached_linkedin_searcher = None
+
+def get_linkedin_job_searcher():
+    """Get cached LinkedInJobSearcher - only initializes once"""
+    global _cached_linkedin_searcher
+    if _cached_linkedin_searcher is None:
+        print("📦 Initializing LinkedIn Job Searcher (first time only)...")
+        # Import here to avoid circular dependency, searcher defined later in file
+        _cached_linkedin_searcher = LinkedInJobSearcher(Config.RAPIDAPI_KEY)
+        print("✅ LinkedIn Job Searcher cached!")
+    return _cached_linkedin_searcher
+
 
 # ============================================================================
 # CAREERLENS UTILITY CLASSES AND FUNCTIONS
@@ -1553,13 +1594,11 @@ class JobMatcher:
     """Match resume to jobs using Pinecone semantic search and skill matching"""
     
     def __init__(self):
-        # Initialize Pinecone
-        self.pc = Pinecone(api_key=Config.PINECONE_API_KEY)
+        # Use cached Pinecone client (avoids re-initialization on every rerun)
+        self.pc = get_pinecone_client()
         
-        # Initialize embedding model
-        print("📦 Loading sentence transformer model...")
-        self.model = SentenceTransformer(Config.MODEL_NAME)
-        print("✅ Model loaded!")
+        # Use cached embedding model (avoids reloading ~85MB model on every rerun)
+        self.model = get_sentence_transformer_model()
         
         # Create/connect to index
         self._initialize_index()
@@ -1679,19 +1718,26 @@ class JobSeekerBackend:
         Config.validate()
         self.resume_parser = ResumeParser()
         self.gpt4_detector = GPT4JobRoleDetector()
-        self.job_searcher = LinkedInJobSearcher(Config.RAPIDAPI_KEY)
+        # Use deferred initialization for job_searcher - will be initialized on first use
+        self._job_searcher = None
         self.matcher = JobMatcher()
         
-        # Test API connection
-        print("\n🧪 Testing RapidAPI connection...")
-        is_working, message = self.job_searcher.test_api_connection()
-        if is_working:
-            print(f"✅ {message}")
-        else:
-            print(f"⚠️ WARNING: {message}")
-            print("   Job search may not work properly!")
-        
         print("\n✅ Backend initialized!\n")
+    
+    @property
+    def job_searcher(self):
+        """Lazy initialization of job searcher - only tests connection when first used"""
+        if self._job_searcher is None:
+            print("\n🧪 Initializing RapidAPI job searcher...")
+            self._job_searcher = get_linkedin_job_searcher()
+            # Test API connection only once
+            is_working, message = self._job_searcher.test_api_connection()
+            if is_working:
+                print(f"✅ {message}")
+            else:
+                print(f"⚠️ WARNING: {message}")
+                print("   Job search may not work properly!")
+        return self._job_searcher
     
     def process_resume(self, file_obj, filename: str) -> Tuple[Dict, Dict]:
         """Process resume and get AI analysis"""
@@ -1749,9 +1795,9 @@ class JobSeekerBackend:
         indexed = self.matcher.index_jobs(jobs)
         print(f"✅ Indexed {indexed} jobs in vector database")
         
-        # Wait for indexing
+        # Wait for indexing (reduced from 2s to 1s for faster response)
         print("⏳ Waiting for indexing to complete...")
-        time.sleep(2)
+        time.sleep(1)
         
         # Match resume to jobs
         print(f"\n🎯 MATCHING & RANKING JOBS")

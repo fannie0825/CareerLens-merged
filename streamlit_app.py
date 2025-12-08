@@ -41,6 +41,7 @@ from io import BytesIO
 
 from backend import JobSeekerBackend
 from backend import LinkedInJobSearcher
+from backend import get_linkedin_job_searcher
 from backend import get_all_jobs_for_matching
 from backend import get_all_job_seekers
 from backend import analyze_match_simple
@@ -69,8 +70,17 @@ from backend import (
 from database import JobSeekerDB
 from database import HeadhunterDB
 
-db = JobSeekerDB()
-db2 = HeadhunterDB()
+# Cache database instances to avoid recreation on every rerun
+@st.cache_resource
+def get_job_seeker_db():
+    return JobSeekerDB()
+
+@st.cache_resource
+def get_headhunter_db():
+    return HeadhunterDB()
+
+db = get_job_seeker_db()
+db2 = get_headhunter_db()
 
 from database import save_job_seeker_info
 from database import save_head_hunter_job
@@ -635,9 +645,14 @@ def load_backend():
 backend = load_backend()
 
 
-# Initialize database
-init_database()
-init_head_hunter_database()
+# Initialize database - only once using caching
+@st.cache_resource
+def initialize_databases():
+    init_database()
+    init_head_hunter_database()
+    return True
+
+_db_initialized = initialize_databases()
 
 # Initialize session state
 if 'current_page' not in st.session_state:
@@ -1271,9 +1286,9 @@ def job_recommendations_page(job_seeker_id=None):
             )
 
             # ----------------------------------------------------
-            # 5) Perform rapid API search
+            # 5) Perform rapid API search (use cached searcher for performance)
             # ----------------------------------------------------
-            rapidapi = LinkedInJobSearcher(api_key=Config.RAPIDAPI_KEY)
+            rapidapi = get_linkedin_job_searcher()
 
             rapidapi_results = rapidapi.search_jobs(
                 keywords=search_keywords,
