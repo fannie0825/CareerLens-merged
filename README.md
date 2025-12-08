@@ -1,4 +1,4 @@
-# 🔍 Smart Career - AI Career Intelligence Platform
+# 🔍 CareerLens - AI Career Intelligence Platform
 
 An AI-powered career intelligence platform built with Streamlit, combining job matching, resume tailoring, and AI interview preparation.
 

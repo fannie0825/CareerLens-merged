@@ -1,5 +1,5 @@
 """
-Smart Career - AI Career Intelligence Platform
+CareerLens - AI Career Intelligence Platform
 Combined application with multi-page navigation and modular dashboard
 
 WebSocket Stability Notes:
@@ -600,12 +600,12 @@ def create_job_comparison_radar(matched_jobs: List[Dict]):
 
 # Page config
 st.set_page_config(
-    page_title="Smart Career",
-    page_icon="🎯",
+    page_title="CareerLens",
+    page_icon="🔍",
     layout="wide",
     initial_sidebar_state="expanded",
     menu_items={
-        'About': "Smart Career - AI-powered career intelligence platform"
+        'About': "CareerLens - AI-powered career intelligence platform"
     }
 )
 
@@ -701,8 +701,8 @@ if MODULES_AVAILABLE:
 
 # APP UI
 def main_analyzer_page():
-    """Main Page - Smart Career"""
-    st.title("🎯 Smart Career")
+    """Main Page - CareerLens"""
+    st.title("🔍 CareerLens")
     st.markdown("Upload your CV and let **GPT-4** find matching jobs globally, ranked by match quality!")
 
     # Define helper functions
