@@ -934,7 +934,23 @@ def main_analyzer_page():
                     tracker.update(3, "Analysis complete!")
                     _websocket_keepalive("Complete")
                     
-                    st.balloons()
+                    # Check if analysis failed or was incomplete
+                    analysis_failed = ai_analysis.get('_analysis_failed', False)
+                    analysis_incomplete = ai_analysis.get('_analysis_incomplete', False)
+                    
+                    if analysis_failed:
+                        st.warning(
+                            "⚠️ **AI Analysis Failed**\n\n"
+                            f"Error: {ai_analysis.get('_error', 'Unknown error')}\n\n"
+                            "Please fill in your career details manually in the form below."
+                        )
+                    elif analysis_incomplete:
+                        st.warning(
+                            "⚠️ **AI Analysis Incomplete**\n\n"
+                            "Could not fully analyze your resume. Please review and complete the form below."
+                        )
+                    else:
+                        st.balloons()
 
                     # Display analysis results
                     st.markdown("---")
@@ -943,7 +959,7 @@ def main_analyzer_page():
                     col1, col2, col3 = st.columns(3)
 
                     with col1:
-                        primary_role = ai_analysis.get('primary_role', 'N/A')
+                        primary_role = ai_analysis.get('primary_role', '') or 'Not detected'
                         st.metric("🎯 Primary Role", primary_role)
 
                     with col2:
@@ -951,7 +967,7 @@ def main_analyzer_page():
                         st.metric("💯 Confidence", f"{confidence:.0f}%")
 
                     with col3:
-                        st.metric("📊 Seniority", ai_analysis.get('seniority_level', 'N/A'))
+                        st.metric("📊 Seniority", ai_analysis.get('seniority_level', '') or 'Not detected')
 
                     # Skills detected by GPT-4
                     st.markdown("### 💡 Skills Detected by GPT-4")

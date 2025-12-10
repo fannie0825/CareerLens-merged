@@ -1424,26 +1424,37 @@ Be thorough and creative!"""
             
             ai_analysis = json.loads(response.choices[0].message.content)
             print(f"✅ GPT-4 analysis complete! Found {len(ai_analysis.get('skills', []))} skills")
+            
+            # Validate that we got meaningful data - if primary_role is empty or generic, flag it
+            if not ai_analysis.get('primary_role') or ai_analysis.get('primary_role') == 'Professional':
+                ai_analysis['_analysis_incomplete'] = True
+            
             return ai_analysis
             
         except Exception as e:
-            print(f"❌ GPT-4 Error: {e}")
-            return self._fallback_analysis()
+            error_msg = str(e)
+            print(f"❌ GPT-4 Error: {error_msg}")
+            # Store error for UI to display
+            fallback = self._fallback_analysis()
+            fallback['_error'] = error_msg
+            fallback['_analysis_failed'] = True
+            return fallback
     
     def _fallback_analysis(self) -> Dict:
-        """Fallback if GPT-4 fails"""
+        """Fallback if GPT-4 fails - returns empty strings so user can fill in manually"""
         return {
-            "primary_role": "Professional",
-            "simple_search_terms": ["Professional"],
-            "confidence": 0.5,
-            "seniority_level": "Mid-Level",
-            "skills": ["General Skills"],
-            "core_strengths": ["Adaptable", "Professional"],
-            "job_search_keywords": ["Professional"],
-            "optimal_search_query": "Professional",
-            "location_preference": "United States",
-            "industries": ["General"],
-            "alternative_roles": ["Specialist", "Consultant"]
+            "primary_role": "",  # Empty so user fills in
+            "simple_search_terms": [],
+            "confidence": 0.0,
+            "seniority_level": "",
+            "skills": [],
+            "core_strengths": [],
+            "job_search_keywords": [],
+            "optimal_search_query": "",
+            "location_preference": "",
+            "industries": [],
+            "alternative_roles": [],
+            "_analysis_failed": True  # Flag to indicate fallback was used
         }
 
 
@@ -1906,7 +1917,16 @@ class JobSeekerBackend:
             location: Location preference (if None, defaults to Hong Kong)
         """
         # Use provided keywords or fall back to AI-detected role
-        search_query = search_keywords if search_keywords else ai_analysis.get('primary_role', 'Professional')
+        # Avoid using generic "Professional" as search query - it returns poor results
+        primary_role = ai_analysis.get('primary_role', '')
+        search_query = search_keywords if search_keywords else primary_role
+        
+        # If no search query available, return empty to prompt user to provide keywords
+        if not search_query or not search_query.strip():
+            print("⚠️ No search keywords provided and no primary role detected.")
+            print("   Please provide search keywords in your profile.")
+            return []
+        
         location = location if location else "Hong Kong"
         
         print(f"\n{'='*60}")
