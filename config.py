@@ -65,7 +65,8 @@ class Config(metaclass=_ConfigMeta):
     def get_azure_endpoint():
         """Get Azure OpenAI endpoint from secrets.
         
-        Automatically strips /openai suffix if present, since the SDK adds it.
+        Users should set: AZURE_OPENAI_ENDPOINT = "https://hkust.azure-api.net/openai"
+        This method automatically strips the /openai suffix because the SDK adds it internally.
         """
         endpoint = st.secrets.get("AZURE_OPENAI_ENDPOINT", "")
         # Strip /openai suffix if present (SDK adds it automatically)
