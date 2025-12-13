@@ -28,10 +28,14 @@ def _load_logo():
                 _logo_html = f'<img src="data:image/png;base64,{logo_base64}" class="hero-bg-logo">'
                 return _logo_html
             except Exception:
-                _logo_html = '<div class="hero-bg-logo"></div>'
-                return _logo_html
+                pass
     
-    _logo_html = '<div class="hero-bg-logo"></div>'
+    # Fallback to CSS-only logo with gradient text
+    _logo_html = '''<div class="hero-bg-logo hero-bg-logo-text">
+        <span style="font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 60px; 
+        background: var(--accent-gradient); -webkit-background-clip: text; 
+        -webkit-text-fill-color: transparent; background-clip: text; opacity: 0.15;">CL</span>
+    </div>'''
     return _logo_html
 
 
@@ -213,6 +217,15 @@ def render_styles():
             pointer-events: none;
             z-index: 5;
         }}
+        .hero-bg-logo-text {{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 150px;
+            height: 150px;
+            right: 20px;
+            top: 20px;
+        }}
         
         .dashboard-metric-card {{
             background: white;
@@ -331,7 +344,7 @@ def render_styles():
             width: 40px;
             height: 40px;
             border: 4px solid #e0e0e0;
-            border-top-color: #0F62FE;
+            border-top-color: var(--brand-glow);
             border-radius: 50%;
             animation: ws-spin 1s linear infinite;
             margin: 0 auto 15px;
