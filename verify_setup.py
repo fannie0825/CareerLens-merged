@@ -13,8 +13,9 @@ Usage:
 """
 
 import sys
+import os
 import importlib
-from typing import List, Tuple
+from typing import Tuple
 
 
 def check_python_version() -> bool:
@@ -22,7 +23,7 @@ def check_python_version() -> bool:
     version = sys.version_info
     print(f"Python version: {version.major}.{version.minor}.{version.micro}")
     
-    if version.major >= 3 and version.minor >= 8:
+    if (version.major, version.minor) >= (3, 8):
         print("✅ Python version is compatible (3.8+)")
         return True
     else:
@@ -90,8 +91,6 @@ def check_app_files() -> bool:
     """Check if main application files exist."""
     print("\nChecking application files...")
     print("-" * 50)
-    
-    import os
     
     required_files = [
         "streamlit_app.py",
