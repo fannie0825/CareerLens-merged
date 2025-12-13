@@ -125,8 +125,8 @@ def render_styles():
         [data-theme="dark"],
         html[data-theme="dark"],
         html[data-theme="dark"] :root {{
-            --primary-accent: #4589FF;
-            --action-accent: #4589FF;
+            --primary-accent: #00D2FF;
+            --action-accent: #00D2FF;
             --bg-main: #161616;
             --bg-container: #262626;
             --card-bg: #262626;
