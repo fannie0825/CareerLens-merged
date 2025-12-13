@@ -98,6 +98,9 @@ from backend import get_jobs_for_interview
 from backend import get_job_seeker_profile
 from backend import ai_interview_page
 
+# Import How It Works page
+from how_it_works import render_how_it_works_page
+
 # CareerLens imports
 from backend import (
     TokenUsageTracker,
@@ -2507,6 +2510,8 @@ if st.sidebar.button("🤖 AI Mock Interview", use_container_width=True, key="ai
     st.session_state.current_page = "ai_interview"
 if st.sidebar.button("📊 Market Dashboard", use_container_width=True, key="market_dashboard_btn"):
     st.session_state.current_page = "market_dashboard"
+if st.sidebar.button("🧠 How This App Works", use_container_width=True, key="how_it_works_btn"):
+    st.session_state.current_page = "how_it_works"
 
 st.sidebar.markdown("---")
 
@@ -2602,6 +2607,8 @@ elif st.session_state.current_page == "tailored_resume":
     tailored_resume_page()
 elif st.session_state.current_page == "market_dashboard":
     market_dashboard_page()
+elif st.session_state.current_page == "how_it_works":
+    render_how_it_works_page()
 
 
 # Sidebar information
@@ -2615,6 +2622,7 @@ st.sidebar.markdown("""
 - **AI Powered Tailored Resume**: Generate job-specific resumes
 - **AI Mock Interview**: Practice with AI-powered mock interviews
 - **Market Dashboard**: View comprehensive market insights
+- **How This App Works**: Learn about our AI technology
 
 **For Recruiters:**
 - **Job Posting**: Publish and manage job openings
