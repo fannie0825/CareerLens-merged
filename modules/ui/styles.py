@@ -2,6 +2,7 @@
 import json
 import os
 import textwrap
+import logging
 
 import streamlit as st
 import streamlit.components.v1 as components
@@ -9,6 +10,9 @@ import streamlit.components.v1 as components
 # Lazy load logo - only when needed
 _logo_html = None
 _logo_loaded = False
+
+# Set up logger for this module
+logger = logging.getLogger(__name__)
 
 
 def _load_logo():
@@ -27,11 +31,12 @@ def _load_logo():
                 logo_base64 = get_img_as_base64(logo_path)
                 _logo_html = f'<img src="data:image/png;base64,{logo_base64}" class="hero-bg-logo">'
                 return _logo_html
-            except (FileNotFoundError, IOError, OSError):
-                # Image file exists but couldn't be read - continue to fallback
+            except (IOError, OSError) as e:
+                # Image file exists but couldn't be read - log and continue to fallback
+                logger.warning(f"Failed to read logo file {logo_path}: {e}")
                 pass
     
-    # Fallback to CSS-only logo with gradient text
+    # No logo files found or all failed to load - use CSS-only fallback
     _logo_html = '<div class="hero-bg-logo hero-bg-logo-text"><span class="hero-logo-initials">CL</span></div>'
     return _logo_html
 
