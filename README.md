@@ -64,6 +64,13 @@ An AI-powered career intelligence platform built with Streamlit, combining job m
    - `openai` - AI integration
    - And all other required packages
 
+   **Verify installation:**
+   ```bash
+   python verify_setup.py
+   ```
+   
+   This script checks that all dependencies are installed correctly.
+
 2. **Configure secrets** (create `.streamlit/secrets.toml`):
    ```toml
    AZURE_OPENAI_API_KEY = "your-key"
@@ -102,6 +109,22 @@ python --version
 - `reportlab` - PDF generation
 - `python-docx` - DOCX generation
 - `PyPDF2` - PDF parsing
+
+## 🔍 Setup Verification
+
+After installing dependencies, run the verification script to ensure everything is configured correctly:
+
+```bash
+python verify_setup.py
+```
+
+This script will:
+- ✅ Check Python version compatibility
+- ✅ Verify all required modules are installed
+- ✅ Confirm application files exist
+- ✅ Test for syntax errors in the main application
+
+If all checks pass, you're ready to run the application!
 
 ## ⚡ Streamlit Cloud Optimizations
 
