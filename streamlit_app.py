@@ -2290,7 +2290,7 @@ def tailored_resume_page():
         st.markdown('<h1 class="main-header">📝 AI-powered Tailored Resume</h1>', unsafe_allow_html=True)
         
         st.markdown("""
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; color: white;">
+        <div style="background: var(--accent-gradient); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; color: white;">
             <h3 style="margin: 0; color: white;">✨ Create Job-Specific Resumes with AI</h3>
             <p style="margin: 0.5rem 0 0 0; opacity: 0.9;">
                 Our AI analyzes job descriptions and tailors your resume to highlight the most relevant skills and experiences.
