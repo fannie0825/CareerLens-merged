@@ -117,23 +117,36 @@ Please extract and return the following information in JSON format:
     "summary": "Professional summary or objective (2-3 sentences)",
     "experience": "Work experience in chronological order with job titles, companies, dates, and key achievements (formatted as bullet points)",
     "education": "Education details including degrees, institutions, and graduation dates",
-    "skills": "Comma-separated list of technical and soft skills",
+    "skills": "Comprehensive comma-separated list of ALL skills (aim for 10-20+ skills)",
     "certifications": "Professional certifications, awards, publications, or other achievements"
 }}
 
+CRITICAL - For the "skills" field, you MUST extract ALL skills comprehensively, including:
+- Programming languages (Python, Java, JavaScript, SQL, R, C++, etc.)
+- Data tools and databases (Tableau, Power BI, Excel, PostgreSQL, MongoDB, etc.)
+- Cloud and DevOps (AWS, Azure, GCP, Docker, Kubernetes, CI/CD, etc.)
+- Frameworks and libraries (React, Angular, TensorFlow, PyTorch, Pandas, etc.)
+- Methodologies (Agile, Scrum, Kanban, Waterfall, etc.)
+- Domain expertise (Financial Analysis, Risk Management, Data Analytics, Machine Learning, etc.)
+- Soft skills (Leadership, Communication, Project Management, Team Collaboration, etc.)
+- Languages spoken (English, Mandarin, Cantonese, etc.)
+- Industry knowledge (Banking, Finance, Healthcare, Technology, etc.)
+- Any tools, technologies, or competencies mentioned anywhere in the resume
+
 Important:
+- Extract EVERY skill mentioned, even if implied from job descriptions or achievements
+- Aim for at least 10-15 skills minimum - be thorough and comprehensive
 - If information is not found, use "N/A" or empty string
 - Format experience with clear job titles, companies, dates, and bullet points for achievements
-- Extract all relevant skills mentioned
 - Keep the summary concise but informative
 - Return ONLY valid JSON, no additional text or markdown"""
         
         payload_pass1 = {
             "messages": [
-                {"role": "system", "content": "You are a resume parser. Extract structured information and return only valid JSON."},
+                {"role": "system", "content": "You are an expert resume parser. Extract ALL information comprehensively, especially skills - aim for 10-20+ skills by scanning the entire resume including job descriptions, achievements, and summary sections. Return only valid JSON."},
                 {"role": "user", "content": prompt_pass1}
             ],
-            "max_tokens": 2000,
+            "max_tokens": 2500,
             "temperature": 0.3,
             "response_format": {"type": "json_object"}
         }
