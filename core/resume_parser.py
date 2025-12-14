@@ -246,6 +246,7 @@ class GPT4JobRoleDetector:
         """Lazy-load AzureOpenAI client only when needed."""
         if self._client is None:
             from openai import AzureOpenAI
+            import httpx
             
             # Clean endpoint
             endpoint = self._config.AZURE_ENDPOINT
@@ -254,10 +255,14 @@ class GPT4JobRoleDetector:
                 if endpoint.endswith('/openai'):
                     endpoint = endpoint[:-7]
             
+            # Create a custom http client that ignores SSL errors
+            http_client = httpx.Client(verify=False)
+
             self._client = AzureOpenAI(
                 azure_endpoint=endpoint,
                 api_key=self._config.AZURE_API_KEY,
-                api_version=self._config.AZURE_API_VERSION
+                api_version=self._config.AZURE_API_VERSION,
+                http_client=http_client
             )
         return self._client
     
@@ -526,6 +531,7 @@ def extract_structured_profile(resume_text: str, enable_verification: bool = Fal
         
         from openai import AzureOpenAI
         import openai
+        import httpx
         
         # Clean endpoint to prevent double /openai path issues
         endpoint = config.AZURE_ENDPOINT
@@ -534,10 +540,14 @@ def extract_structured_profile(resume_text: str, enable_verification: bool = Fal
             if endpoint.endswith('/openai'):
                 endpoint = endpoint[:-7]
         
+        # Create a custom http client that ignores SSL errors
+        http_client = httpx.Client(verify=False)
+
         client = AzureOpenAI(
             azure_endpoint=endpoint,
             api_key=config.AZURE_API_KEY,
-            api_version=config.AZURE_API_VERSION
+            api_version=config.AZURE_API_VERSION,
+            http_client=http_client
         )
         
         # FIRST PASS: Initial extraction
@@ -681,6 +691,7 @@ def generate_tailored_resume(user_profile: Dict, job_posting: Dict,
         
         from openai import AzureOpenAI
         import openai
+        import httpx
         
         # Clean endpoint
         endpoint = config.AZURE_ENDPOINT
@@ -689,10 +700,14 @@ def generate_tailored_resume(user_profile: Dict, job_posting: Dict,
             if endpoint.endswith('/openai'):
                 endpoint = endpoint[:-7]
         
+        # Create a custom http client that ignores SSL errors
+        http_client = httpx.Client(verify=False)
+
         client = AzureOpenAI(
             azure_endpoint=endpoint,
             api_key=config.AZURE_API_KEY,
-            api_version=config.AZURE_API_VERSION
+            api_version=config.AZURE_API_VERSION,
+            http_client=http_client
         )
         
         system_instructions = """You are an expert resume writer with expertise in ATS optimization and career coaching.
