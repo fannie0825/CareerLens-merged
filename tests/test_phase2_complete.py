@@ -1,4 +1,7 @@
 # tests/test_phase2_complete.py
+"""
+Test that all Phase 2 module reorganization is complete.
+"""
 
 def test_import_linkedin_api():
     """Verify LinkedIn API imports work"""
@@ -54,10 +57,20 @@ def test_import_resume_formatters():
     assert generate_pdf_from_json is not None
 
 
-def test_backend_imports():
-    """Verify backend.py re-exports everything"""
-    from backend import (
-        LinkedInJobSearcher,
+def test_import_job_processor():
+    """Verify job processor imports work"""
+    from core.job_processor import (
+        JobSeekerBackend,
+        JobMatcherBackend
+    )
+    # All should be importable
+    assert JobSeekerBackend is not None
+    assert JobMatcherBackend is not None
+
+
+def test_core_module_exports():
+    """Verify core module exports all key components"""
+    from core import (
         JobMatcher,
         ResumeParser,
         analyze_match_simple,
@@ -66,6 +79,9 @@ def test_backend_imports():
         JobSeekerBackend,
         JobMatcherBackend
     )
+    from services.linkedin_api import LinkedInJobSearcher
+    
     # All should be importable
     assert LinkedInJobSearcher is not None
     assert JobMatcher is not None
+    assert ResumeParser is not None

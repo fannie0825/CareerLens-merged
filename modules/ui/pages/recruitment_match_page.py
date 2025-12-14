@@ -13,7 +13,7 @@ from typing import List, Dict
 
 def recruitment_match_dashboard():
     """Recruitment Match Dashboard"""
-    from backend import get_all_jobs_for_matching, get_all_job_seekers, show_match_statistics, show_instructions
+    from database.queries import get_all_jobs_for_matching, get_all_job_seekers
     
     st.title("🎯 Recruitment Match Portal")
 
@@ -45,7 +45,8 @@ def recruitment_match_dashboard():
 
 def recruitment_match_page():
     """Recruitment Match Page"""
-    from backend import get_all_jobs_for_matching, get_all_job_seekers, analyze_match_simple
+    from database.queries import get_all_jobs_for_matching, get_all_job_seekers
+    from core.job_matcher import analyze_match_simple
     
     # Import WebSocket utilities with fallback
     try:
@@ -206,3 +207,64 @@ def recruitment_match_page():
                             st.success(f"Interview scheduled: {result['name']}")
         else:
             st.warning("😔 No matching candidates found, please adjust matching conditions")
+
+
+def show_match_statistics():
+    """Show match statistics in Streamlit UI."""
+    from database.queries import get_all_jobs_for_matching_tuples, get_all_job_seekers_formatted
+    
+    st.header("📊 Match Statistics")
+
+    jobs = get_all_jobs_for_matching_tuples()
+    seekers = get_all_job_seekers_formatted()
+
+    if not jobs or not seekers:
+        st.info("No statistics data available")
+        return
+
+    # Industry distribution
+    st.subheader("🏭 Industry Distribution")
+    industry_counts = {}
+    for job in jobs:
+        industry = job[6] if job[6] else "Not Specified"
+        industry_counts[industry] = industry_counts.get(industry, 0) + 1
+
+    for industry, count in industry_counts.items():
+        percentage = (count / len(jobs)) * 100
+        st.write(f"• **{industry}:** {count} Positions ({percentage:.1f}%)")
+
+    # Experience Level Distribution
+    st.subheader("🎯 Experience Level Distribution")
+    experience_counts = {}
+    for job in jobs:
+        experience = job[11] if len(job) > 11 and job[11] else "Not Specified"
+        experience_counts[experience] = experience_counts.get(experience, 0) + 1
+
+    for exp, count in experience_counts.items():
+        st.write(f"• **{exp}:** {count} Positions")
+
+
+def show_instructions():
+    """Display usage instructions in Streamlit UI."""
+    st.header("📖 Instructions")
+
+    st.info("""
+    **Recruitment Match Instructions:**
+
+    1. **Select Position**: Choose a position from the positions published by the headhunter module
+    2. **Set Conditions**: Adjust the minimum match score and display count
+    3. **Start Matching**: The system will automatically analyze the match between all job seekers and the position
+    4. **View Results**: View detailed match analysis report
+    5. **Take Action**: Contact candidates, schedule interviews
+
+    **Matching Algorithm Based on:**
+    • Skill Match (Hard Skills)
+    • Experience Fit (Work Experience Years)
+    • Industry Relevance (Industry Preferences)
+    • Location Match (Work Location Preferences)
+    • Comprehensive Assessment Analysis
+
+    **Data Sources:**
+    • Position Information: Positions published by Head Hunter module
+    • Job Seeker Information: Information filled in Job Seeker page
+    """)

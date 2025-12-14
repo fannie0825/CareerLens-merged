@@ -80,7 +80,8 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
     
     # Import resume generator UI
     try:
-        from backend import generate_tailored_resume, generate_docx_from_json, generate_pdf_from_json, format_resume_as_text
+        from core.resume_parser import generate_tailored_resume
+        from services.azure_openai import generate_docx_from_json, generate_pdf_from_json, format_resume_as_text
         from modules.resume_upload import verify_profile_data_pass2
         RESUME_AVAILABLE = True
     except ImportError:
@@ -462,7 +463,8 @@ def _display_job_matches(matched_jobs: List[Dict], num_jobs_to_show: int, job_se
     """Display job match results with expandable details"""
     # Import resume generator if available
     try:
-        from backend import generate_tailored_resume, generate_docx_from_json, generate_pdf_from_json, format_resume_as_text
+        from core.resume_parser import generate_tailored_resume
+        from services.azure_openai import generate_docx_from_json, generate_pdf_from_json, format_resume_as_text
         from modules.resume_upload import verify_profile_data_pass2
         from modules.utils.helpers import ProgressTracker, _websocket_keepalive
         RESUME_AVAILABLE = True
@@ -650,7 +652,8 @@ def _display_resume_generator_ui(job: Dict, user_profile: Dict, resume_text: str
     ensuring accurate dates, company names, and job titles in the tailored resume.
     """
     try:
-        from backend import generate_tailored_resume, generate_docx_from_json, generate_pdf_from_json, format_resume_as_text
+        from core.resume_parser import generate_tailored_resume
+        from services.azure_openai import generate_docx_from_json, generate_pdf_from_json, format_resume_as_text
         from modules.resume_upload import verify_profile_data_pass2
         from modules.utils.helpers import ProgressTracker, _websocket_keepalive
     except ImportError:

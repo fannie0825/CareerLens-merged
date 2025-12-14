@@ -1,7 +1,10 @@
 # tests/test_integration_phase2.py
+"""
+Integration tests for Phase 2 module reorganization.
+"""
 
 import pytest
-from backend import JobSeekerBackend, JobMatcherBackend
+from core.job_processor import JobSeekerBackend, JobMatcherBackend
 
 def test_job_seeker_backend_initializes():
     """Test JobSeekerBackend orchestrator initializes correctly"""
@@ -58,3 +61,21 @@ def test_job_matcher_backend_mock_jobs():
     assert len(mock_jobs) > 0
     assert 'job_title' in mock_jobs[0]
     assert 'job_description' in mock_jobs[0]
+
+
+def test_core_module_imports():
+    """Test that core module can be imported"""
+    from core import (
+        TokenUsageTracker,
+        RateLimiter,
+        JobMatcher,
+        ResumeParser,
+        GPT4JobRoleDetector,
+        JobSeekerBackend,
+        JobMatcherBackend
+    )
+    
+    # All should be importable
+    assert TokenUsageTracker is not None
+    assert JobMatcher is not None
+    assert ResumeParser is not None
