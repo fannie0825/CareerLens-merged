@@ -441,22 +441,22 @@ def main_analyzer_page():
                 else:
                     # Save to database - pass as dictionary
                     profile_data = {
-                        'education_level': education_level,
-                        'major': major,
-                        'graduation_status': graduation_status,
-                        'university_background': university_background,
-                        'languages': languages,
-                        'certificates': certificates,
-                        'hard_skills': hard_skills,
-                        'soft_skills': soft_skills,
-                        'work_experience': work_experience,
-                        'project_experience': project_experience,
-                        'location_preference': location_preference,
-                        'industry_preference': industry_preference,
-                        'salary_expectation': salary_expectation,
-                        'benefits_expectation': benefits_expectation,
-                        'primary_role': primary_role,
-                        'simple_search_terms': simple_search_terms
+                        "education_level": education_level,
+                        "major": major,
+                        "graduation_status": graduation_status,
+                        "university_background": university_background,
+                        "languages": languages,
+                        "certificates": certificates,
+                        "hard_skills": hard_skills,
+                        "soft_skills": soft_skills,
+                        "work_experience": work_experience,
+                        "project_experience": project_experience,
+                        "location_preference": location_preference,
+                        "industry_preference": industry_preference,
+                        "salary_expectation": salary_expectation,
+                        "benefits_expectation": benefits_expectation,
+                        "primary_role": primary_role,
+                        "simple_search_terms": simple_search_terms
                     }
                     job_seeker_id = save_job_seeker_info(profile_data)
                     
