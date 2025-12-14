@@ -131,7 +131,7 @@ Please only return the question content, without additional explanations.
             """
 
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=config.AZURE_OPENAI_DEPLOYMENT or "gpt-4o-mini",
             messages=[
                 {
                     "role": "system",
@@ -211,7 +211,7 @@ Please return evaluation results in the following JSON format:
         """
 
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=config.AZURE_OPENAI_DEPLOYMENT or "gpt-4o-mini",
             messages=[
                 {
                     "role": "system",
@@ -304,7 +304,7 @@ Please return in the following JSON format:
         """
 
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=config.AZURE_OPENAI_DEPLOYMENT or "gpt-4o-mini",
             messages=[
                 {
                     "role": "system",

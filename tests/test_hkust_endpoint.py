@@ -25,14 +25,26 @@ def test_endpoint(api_key):
         ENDPOINT.replace('/openai', ''),  # Stripped: https://hkust.azure-api.net
     ]
     
-    # Common deployment names to try
+    # Common deployment names to try (expanded list for HKUST APIM)
     deployments_to_try = [
+        # Standard Azure OpenAI names
         "gpt-4o-mini",
         "gpt-4o",
         "gpt-4",
+        "gpt-4-turbo",
         "gpt-35-turbo",
         "gpt-3.5-turbo",
+        # Potential HKUST custom names
+        "hkust-gpt4",
+        "hkust-gpt-4",
+        "hkust-gpt4o",
+        "hkust-gpt-4o",
+        "gpt4",
+        "gpt4o",
         "chatgpt",
+        "chat",
+        "completion",
+        # Legacy names
         "text-davinci-003",
     ]
     
