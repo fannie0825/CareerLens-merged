@@ -6,6 +6,7 @@ This module provides thread-safe implementations of:
 - RateLimiter: Rate limiting for API calls
 """
 
+import time
 from datetime import datetime, timedelta
 from collections import defaultdict
 import threading
@@ -129,8 +130,12 @@ class RateLimiter:
     within a sliding time window.
     
     Args:
-        max_calls: Maximum number of calls allowed in the time window
+        max_calls: Maximum number of calls allowed in the time window.
+                   Can also use `max_requests_per_minute` as an alias.
         time_window: Time window in seconds (default: 60 for per-minute limiting)
+        sleep_func: Optional custom sleep function (default: time.sleep).
+                    Use this to pass a chunked sleep for Streamlit WebSocket keepalive.
+        max_requests_per_minute: Alias for max_calls with time_window=60 (for backwards compatibility)
     
     Example:
         limiter = RateLimiter(max_calls=10, time_window=60)
@@ -140,13 +145,29 @@ class RateLimiter:
         else:
             # Handle rate limit exceeded
             pass
+        
+        # Or use the simpler per-minute syntax:
+        limiter = RateLimiter(max_requests_per_minute=10)
     """
     
-    def __init__(self, max_calls: int, time_window: int = 60):
-        self.max_calls = max_calls
+    def __init__(self, max_calls: int = None, time_window: int = 60, 
+                 sleep_func=None, max_requests_per_minute: int = None):
+        # Support both max_calls and max_requests_per_minute for backwards compatibility
+        if max_calls is not None:
+            self.max_calls = max_calls
+        elif max_requests_per_minute is not None:
+            self.max_calls = max_requests_per_minute
+            time_window = 60  # Ensure 60 seconds for per-minute limiting
+        else:
+            raise ValueError("Either max_calls or max_requests_per_minute must be provided")
+        
         self.time_window = timedelta(seconds=time_window)
         self.calls = []
         self.lock = threading.Lock()
+        # Allow custom sleep function for Streamlit WebSocket keepalive
+        self._sleep_func = sleep_func if sleep_func is not None else time.sleep
+        # Store original time_window seconds for display messages
+        self._time_window_seconds = time_window
     
     def allow_request(self) -> bool:
         """Check if a request is allowed under the rate limit.
@@ -169,9 +190,8 @@ class RateLimiter:
         
         This method blocks until a request slot is available.
         Compatible with the existing RateLimiter interface used in api_clients.py.
+        Uses the custom sleep function if provided (e.g., for Streamlit WebSocket keepalive).
         """
-        import time
-        
         if self.max_calls <= 0:
             return
         
@@ -189,7 +209,7 @@ class RateLimiter:
                     # Release lock during sleep
                     self.lock.release()
                     try:
-                        time.sleep(wait_seconds)
+                        self._sleep_func(wait_seconds)
                     finally:
                         self.lock.acquire()
                     
