@@ -28,10 +28,17 @@ except ImportError:
 class AzureOpenAIClient:
     """Base Azure OpenAI client."""
     def __init__(self):
+        # Clean endpoint to prevent double /openai path issues
+        endpoint = Config.AZURE_OPENAI_ENDPOINT
+        if endpoint:
+            endpoint = endpoint.rstrip('/')
+            if endpoint.endswith('/openai'):
+                endpoint = endpoint[:-7]
+                
         self.client = AzureOpenAI(
             api_key=Config.AZURE_OPENAI_API_KEY,
             api_version=Config.AZURE_OPENAI_API_VERSION,
-            azure_endpoint=Config.AZURE_OPENAI_ENDPOINT
+            azure_endpoint=endpoint
         )
         self.token_tracker = TokenUsageTracker()
         self.rate_limiter = RateLimiter(max_calls=60, time_window=60)

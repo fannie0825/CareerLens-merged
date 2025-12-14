@@ -246,8 +246,16 @@ class GPT4JobRoleDetector:
         """Lazy-load AzureOpenAI client only when needed."""
         if self._client is None:
             from openai import AzureOpenAI
+            
+            # Clean endpoint
+            endpoint = self._config.AZURE_ENDPOINT
+            if endpoint:
+                endpoint = endpoint.rstrip('/')
+                if endpoint.endswith('/openai'):
+                    endpoint = endpoint[:-7]
+            
             self._client = AzureOpenAI(
-                azure_endpoint=self._config.AZURE_ENDPOINT,
+                azure_endpoint=endpoint,
                 api_key=self._config.AZURE_API_KEY,
                 api_version=self._config.AZURE_API_VERSION
             )
@@ -488,8 +496,15 @@ def extract_structured_profile(resume_text: str, enable_verification: bool = Fal
         from openai import AzureOpenAI
         import openai
         
+        # Clean endpoint to prevent double /openai path issues
+        endpoint = config.AZURE_ENDPOINT
+        if endpoint:
+            endpoint = endpoint.rstrip('/')
+            if endpoint.endswith('/openai'):
+                endpoint = endpoint[:-7]
+        
         client = AzureOpenAI(
-            azure_endpoint=config.AZURE_ENDPOINT,
+            azure_endpoint=endpoint,
             api_key=config.AZURE_API_KEY,
             api_version=config.AZURE_API_VERSION
         )
@@ -535,26 +550,15 @@ Important:
                 response_format={"type": "json_object"}
             )
         except openai.NotFoundError:
-            if '/openai' in config.AZURE_ENDPOINT:
-                print("⚠️ 404 on primary endpoint, trying fallback without /openai path...")
-                new_endpoint = config.AZURE_ENDPOINT.replace('/openai', '')
-                client = AzureOpenAI(
-                    azure_endpoint=new_endpoint,
-                    api_key=config.AZURE_API_KEY,
-                    api_version=config.AZURE_API_VERSION
-                )
-                response_pass1 = client.chat.completions.create(
-                    model=config.AZURE_MODEL,
-                    messages=[
-                        {"role": "system", "content": "You are a resume parser. Extract structured information and return only valid JSON."},
-                        {"role": "user", "content": prompt_pass1}
-                    ],
-                    max_tokens=2000,
-                    temperature=0.3,
-                    response_format={"type": "json_object"}
-                )
-            else:
-                raise
+            print(f"⚠️ 404 Resource Not Found in extract_structured_profile. Endpoint: {endpoint}")
+            # Try fallback without /openai path if it was somehow still there or if user provided something else
+            if '/openai' in config.AZURE_ENDPOINT and not endpoint.endswith('/openai'):
+                 # This path shouldn't be reached if we cleaned it above, but keeping for safety
+                 pass
+            
+            print("❌ Structured profile extraction failed (404). Returning None.")
+            return None
+
         
         content_pass1 = response_pass1.choices[0].message.content
         profile_data_pass1 = json.loads(content_pass1)
@@ -639,8 +643,15 @@ def generate_tailored_resume(user_profile: Dict, job_posting: Dict,
         from openai import AzureOpenAI
         import openai
         
+        # Clean endpoint
+        endpoint = config.AZURE_ENDPOINT
+        if endpoint:
+            endpoint = endpoint.rstrip('/')
+            if endpoint.endswith('/openai'):
+                endpoint = endpoint[:-7]
+        
         client = AzureOpenAI(
-            azure_endpoint=config.AZURE_ENDPOINT,
+            azure_endpoint=endpoint,
             api_key=config.AZURE_API_KEY,
             api_version=config.AZURE_API_VERSION
         )
@@ -726,26 +737,8 @@ Return ONLY the JSON object."""
                 response_format={"type": "json_object"}
             )
         except openai.NotFoundError:
-            if '/openai' in config.AZURE_ENDPOINT:
-                print("⚠️ 404 on primary endpoint, trying fallback without /openai path...")
-                new_endpoint = config.AZURE_ENDPOINT.replace('/openai', '')
-                client = AzureOpenAI(
-                    azure_endpoint=new_endpoint,
-                    api_key=config.AZURE_API_KEY,
-                    api_version=config.AZURE_API_VERSION
-                )
-                response = client.chat.completions.create(
-                    model=config.AZURE_MODEL,
-                    messages=[
-                        {"role": "system", "content": system_instructions},
-                        {"role": "user", "content": prompt}
-                    ],
-                    max_tokens=3000,
-                    temperature=0.7,
-                    response_format={"type": "json_object"}
-                )
-            else:
-                raise
+            print(f"⚠️ 404 Resource Not Found in generate_tailored_resume. Endpoint: {endpoint}")
+            return None
         
         content = response.choices[0].message.content
         resume_data = json.loads(content)
