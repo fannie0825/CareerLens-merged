@@ -123,6 +123,8 @@ class APIMEmbeddingGenerator:
                 tokens_used = result['usage'].get('total_tokens', 0) if 'usage' in result else estimated_tokens
                 return embedding, tokens_used
             else:
+                if response and response.status_code == 404:
+                     st.error(f"🚫 404 Resource Not Found. Check AZURE_OPENAI_EMBEDDING_DEPLOYMENT ('{self.deployment}').")
                 return None, 0
         except Exception as e:
             st.error(f"Error generating embedding: {e}")
@@ -371,8 +373,11 @@ IMPORTANT: Return ONLY the JSON object, no markdown code blocks, no additional t
                         return None
             else:
                 if response:
-                    error_detail = response.text[:200] if response.text else "No error details"
-                    st.error(f"API Error: {response.status_code} - {error_detail}")
+                    if response.status_code == 404:
+                         st.error(f"🚫 404 Resource Not Found. Please check that your AZURE_OPENAI_DEPLOYMENT name ('{self.deployment}') matches your Azure resource.")
+                    else:
+                        error_detail = response.text[:200] if response.text else "No error details"
+                        st.error(f"API Error: {response.status_code} - {error_detail}")
                 return None
         except Exception as e:
             st.error(f"Error generating resume: {e}")

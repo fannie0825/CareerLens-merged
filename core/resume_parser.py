@@ -859,6 +859,8 @@ Important:
         if not response_pass1 or response_pass1.status_code != 200:
             if response_pass1 and response_pass1.status_code == 429:
                 st.error("🚫 Rate limit reached for profile extraction after retries. Please wait a few minutes and try again.")
+            elif response_pass1 and response_pass1.status_code == 404:
+                st.error(f"🚫 404 Resource Not Found. This likely means the deployment name '{text_gen.deployment}' is incorrect. Please check AZURE_OPENAI_DEPLOYMENT in your secrets.")
             else:
                 error_detail = response_pass1.text[:200] if response_pass1 and response_pass1.text else "No error details"
                 endpoint_info = f"Endpoint: {text_gen.url.split('/deployments')[0]}" if text_gen else "Endpoint: Not configured"
