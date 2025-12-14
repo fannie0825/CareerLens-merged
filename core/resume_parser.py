@@ -318,6 +318,7 @@ For job search, provide SIMPLE terms that would work on LinkedIn/Indeed (not com
 
 Be thorough and creative!"""
 
+        import openai
         try:
             # Check if API keys are configured before attempting API call
             is_configured, error_msg = self._config.check_azure_credentials()
@@ -362,6 +363,22 @@ Be thorough and creative!"""
                 ai_analysis['_analysis_incomplete'] = True
             
             return ai_analysis
+            
+        except openai.APIConnectionError as e:
+            error_msg = f"Connection error: {e}. Please check your AZURE_OPENAI_ENDPOINT. It should be 'https://YOUR_RESOURCE.openai.azure.com/'"
+            print(f"❌ GPT-4 Connection Error: {error_msg}")
+            fallback = self._fallback_analysis()
+            fallback['_error'] = error_msg
+            fallback['_analysis_failed'] = True
+            return fallback
+            
+        except openai.AuthenticationError as e:
+            error_msg = f"Authentication error: {e}. Please check your AZURE_OPENAI_API_KEY."
+            print(f"❌ GPT-4 Auth Error: {error_msg}")
+            fallback = self._fallback_analysis()
+            fallback['_error'] = error_msg
+            fallback['_analysis_failed'] = True
+            return fallback
             
         except Exception as e:
             error_msg = str(e)
@@ -572,6 +589,14 @@ Important:
             
             print("❌ Structured profile extraction failed (404). Returning None.")
             return None
+        
+        except openai.APIConnectionError as e:
+            print(f"❌ Connection error: {e}. Please check your AZURE_OPENAI_ENDPOINT. It should be 'https://YOUR_RESOURCE.openai.azure.com/'")
+            return None
+            
+        except openai.AuthenticationError as e:
+            print(f"❌ Authentication error: {e}. Please check your AZURE_OPENAI_API_KEY.")
+            return None
 
         
         content_pass1 = response_pass1.choices[0].message.content
@@ -752,6 +777,14 @@ Return ONLY the JSON object."""
             )
         except openai.NotFoundError:
             print(f"⚠️ 404 Resource Not Found in generate_tailored_resume. Endpoint: {endpoint}")
+            return None
+            
+        except openai.APIConnectionError as e:
+            print(f"❌ Connection error: {e}. Please check your AZURE_OPENAI_ENDPOINT.")
+            return None
+            
+        except openai.AuthenticationError as e:
+            print(f"❌ Authentication error: {e}. Please check your AZURE_OPENAI_API_KEY.")
             return None
         
         content = response.choices[0].message.content

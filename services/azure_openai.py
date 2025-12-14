@@ -8,6 +8,7 @@ This module provides:
 - ResumeGenerator: AI-powered resume generation
 """
 from io import BytesIO
+import openai
 from openai import AzureOpenAI
 from config import Config
 from core.rate_limiting import TokenUsageTracker, RateLimiter
@@ -251,6 +252,14 @@ Return ONLY the JSON object."""
                     print(f"Could not parse JSON response: {e}")
                     return None
                     
+        except openai.APIConnectionError as e:
+            print(f"❌ Connection error: {e}. Please check your AZURE_OPENAI_ENDPOINT.")
+            return None
+            
+        except openai.AuthenticationError as e:
+            print(f"❌ Authentication error: {e}. Please check your AZURE_OPENAI_API_KEY.")
+            return None
+            
         except Exception as e:
             print(f"Error generating resume: {e}")
             return None
