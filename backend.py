@@ -1685,6 +1685,35 @@ class LinkedInJobSearcher:
         except Exception:
             return []
     
+    def _extract_skills_from_description(self, description: str) -> List[str]:
+        """Extract common skills from job description text"""
+        if not description:
+            return []
+        
+        # Common skills to look for
+        common_skills = [
+            'Python', 'Java', 'JavaScript', 'SQL', 'R', 'C++', 'C#', 'Go', 'Ruby', 'PHP',
+            'React', 'Angular', 'Vue', 'Node.js', 'Django', 'Flask', 'Spring', 'TensorFlow', 'PyTorch',
+            'AWS', 'Azure', 'GCP', 'Docker', 'Kubernetes', 'CI/CD', 'Git', 'Linux',
+            'Machine Learning', 'Deep Learning', 'Data Analysis', 'Data Science', 'AI',
+            'Tableau', 'Power BI', 'Excel', 'Salesforce', 'SAP',
+            'Agile', 'Scrum', 'Project Management', 'Leadership', 'Communication',
+            'PostgreSQL', 'MySQL', 'MongoDB', 'Redis', 'Elasticsearch',
+            'REST API', 'GraphQL', 'Microservices', 'DevOps',
+            'Financial Analysis', 'Risk Management', 'Compliance', 'Accounting',
+            'Marketing', 'SEO', 'Digital Marketing', 'Content Management',
+            'English', 'Mandarin', 'Cantonese', 'Japanese', 'Korean'
+        ]
+        
+        description_lower = description.lower()
+        found_skills = []
+        
+        for skill in common_skills:
+            if skill.lower() in description_lower:
+                found_skills.append(skill)
+        
+        return found_skills[:15]  # Limit to 15 skills
+    
     def _normalize_jobs(self, jobs: List[Dict]) -> List[Dict]:
         """Normalize job structure"""
         normalized_jobs = []
@@ -1707,14 +1736,24 @@ class LinkedInJobSearcher:
                     except (KeyError, TypeError, IndexError):
                         pass
                 
+                # Extract skills from description or use empty list
+                description = job.get('description_text', '')
+                skills = self._extract_skills_from_description(description)
+                
                 normalized_job = {
                     'id': job.get('id', f"job_{len(normalized_jobs)}"),
                     'title': job.get('title', 'Unknown Title'),
                     'company': job.get('organization', 'Unknown Company'),
                     'location': location,
-                    'description': job.get('description_text', ''),
+                    'description': description,
                     'url': job.get('url', ''),
                     'posted_date': job.get('date_posted', 'Unknown'),
+                    'salary': job.get('salary', 'Not specified'),
+                    'job_type': job.get('employment_type', 'Full-time'),
+                    'skills': skills,
+                    'benefits': [],
+                    'company_rating': 0,
+                    'is_remote': 'remote' in location.lower() if location else False
                 }
                 
                 normalized_jobs.append(normalized_job)
