@@ -4,11 +4,12 @@ Consolidates all DB access from backend.py
 """
 import sqlite3
 from typing import List, Dict, Optional, Tuple
-from .models import JobSeekerDB, HeadhunterDB
+from .models import JobSeekerDB, HeadhunterDB, MatchedJobsDB
 
 # Initialize singletons
 _job_seeker_db = None
 _headhunter_db = None
+_matched_jobs_db = None
 
 
 def get_job_seeker_db() -> JobSeekerDB:
@@ -25,6 +26,14 @@ def get_headhunter_db() -> HeadhunterDB:
     if _headhunter_db is None:
         _headhunter_db = HeadhunterDB()
     return _headhunter_db
+
+
+def get_matched_jobs_db() -> MatchedJobsDB:
+    """Get matched jobs database instance (singleton)."""
+    global _matched_jobs_db
+    if _matched_jobs_db is None:
+        _matched_jobs_db = MatchedJobsDB()
+    return _matched_jobs_db
 
 
 # ============================================================================
@@ -211,3 +220,141 @@ def get_job_seeker_search_fields(job_seeker_id: str) -> Optional[Dict]:
     Backward compatibility wrapper for JobSeekerDB.get_search_fields().
     """
     return get_job_seeker_db().get_search_fields(job_seeker_id)
+
+
+# ============================================================================
+# MATCHED JOBS QUERY FUNCTIONS (job_post_API.db)
+# ============================================================================
+
+def save_matched_job(job_data: Dict) -> int:
+    """Save a matched job to the database.
+    
+    Args:
+        job_data: Dictionary containing job and matching metadata
+        
+    Returns:
+        The ID of the inserted record
+    """
+    return get_matched_jobs_db().save_matched_job(job_data)
+
+
+def save_matched_jobs_batch(jobs: List[Dict]) -> int:
+    """Save multiple matched jobs in a batch.
+    
+    Args:
+        jobs: List of job dictionaries
+        
+    Returns:
+        Number of jobs saved
+    """
+    return get_matched_jobs_db().save_matched_jobs_batch(jobs)
+
+
+def get_matched_job(job_id: str) -> Optional[Dict]:
+    """Get a matched job by its external job ID.
+    
+    Args:
+        job_id: External job ID from Indeed/LinkedIn
+        
+    Returns:
+        Job dictionary or None
+    """
+    return get_matched_jobs_db().get_matched_job(job_id)
+
+
+def get_matched_jobs_for_seeker(
+    job_seeker_id: str, 
+    min_score: float = 0.0,
+    limit: int = 100
+) -> List[Dict]:
+    """Get all matched jobs for a job seeker.
+    
+    Args:
+        job_seeker_id: The job seeker's ID
+        min_score: Minimum cosine similarity score filter
+        limit: Maximum number of results
+        
+    Returns:
+        List of matched job dictionaries, ordered by similarity score
+    """
+    return get_matched_jobs_db().get_matched_jobs_by_seeker(job_seeker_id, min_score, limit)
+
+
+def get_top_job_matches(job_seeker_id: str, limit: int = 10) -> List[Dict]:
+    """Get top matched jobs for a job seeker by similarity score.
+    
+    Args:
+        job_seeker_id: The job seeker's ID
+        limit: Maximum number of results
+        
+    Returns:
+        List of top matched job dictionaries
+    """
+    return get_matched_jobs_db().get_top_matches(job_seeker_id, limit)
+
+
+def get_recent_job_matches(job_seeker_id: str, limit: int = 20) -> List[Dict]:
+    """Get recently matched jobs for a job seeker.
+    
+    Args:
+        job_seeker_id: The job seeker's ID
+        limit: Maximum number of results
+        
+    Returns:
+        List of recently matched job dictionaries
+    """
+    return get_matched_jobs_db().get_recent_matches(job_seeker_id, limit)
+
+
+def delete_matched_job(job_id: str) -> bool:
+    """Delete a matched job by its external job ID.
+    
+    Args:
+        job_id: External job ID
+        
+    Returns:
+        True if deleted, False if not found
+    """
+    return get_matched_jobs_db().delete_matched_job(job_id)
+
+
+def delete_matches_for_seeker(job_seeker_id: str) -> int:
+    """Delete all matched jobs for a job seeker.
+    
+    Args:
+        job_seeker_id: The job seeker's ID
+        
+    Returns:
+        Number of records deleted
+    """
+    return get_matched_jobs_db().delete_matches_for_seeker(job_seeker_id)
+
+
+def get_match_statistics(job_seeker_id: str) -> Dict:
+    """Get matching statistics for a job seeker.
+    
+    Args:
+        job_seeker_id: The job seeker's ID
+        
+    Returns:
+        Dictionary with statistics (total_matches, avg_similarity, etc.)
+    """
+    return get_matched_jobs_db().get_match_statistics(job_seeker_id)
+
+
+def get_all_matched_jobs() -> List[Dict]:
+    """Get all matched jobs in the database.
+    
+    Returns:
+        List of all matched job dictionaries
+    """
+    return get_matched_jobs_db().get_all_matched_jobs()
+
+
+def init_matched_jobs_database() -> None:
+    """Initialize matched jobs database.
+    
+    Note: Schema is auto-initialized when MatchedJobsDB is instantiated.
+    This function exists for explicit initialization if needed.
+    """
+    get_matched_jobs_db()  # Triggers schema initialization
