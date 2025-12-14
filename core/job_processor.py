@@ -193,8 +193,15 @@ class JobSeekerBackend:
         Returns:
             Dictionary with extracted fields
         """
-        import openai
+        from openai import AzureOpenAI
         import json
+        
+        # Use Azure OpenAI client
+        client = AzureOpenAI(
+            azure_endpoint=Config.AZURE_OPENAI_ENDPOINT,
+            api_key=Config.AZURE_OPENAI_API_KEY,
+            api_version=Config.AZURE_OPENAI_API_VERSION
+        )
         
         prompt = f"""
 Below is the cv text of a candidate. 
@@ -220,8 +227,8 @@ Please output JSON, fields including:
 Please return the result in the JSON format only, no extra explanation.
 """
 
-        response = openai.chat.completions.create(
-            model="gpt-4o-mini",
+        response = client.chat.completions.create(
+            model=Config.AZURE_OPENAI_DEPLOYMENT or "gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
             temperature=0
         )
