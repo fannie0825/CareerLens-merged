@@ -355,6 +355,33 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
                                     # Save to session state
                                     st.session_state.matched_jobs = matched_jobs
                                     
+                                    # ==========================================
+                                    # STEP 2 DATA FLOW: Store matched jobs in job_post_API.db
+                                    # Only jobs above 60% match threshold are saved
+                                    # ==========================================
+                                    current_job_seeker_id = st.session_state.get('job_seeker_id')
+                                    if current_job_seeker_id:
+                                        try:
+                                            from core.job_seeker_flow import MATCH_SCORE_THRESHOLD
+                                            from database import save_matched_jobs_batch
+                                            
+                                            # Filter and prepare jobs for storage
+                                            jobs_to_store = []
+                                            for job in matched_jobs:
+                                                combined_score = job.get('combined_score', job.get('combined_match_score', 0))
+                                                
+                                                if combined_score >= MATCH_SCORE_THRESHOLD:
+                                                    job_record = _prepare_job_for_storage(current_job_seeker_id, job)
+                                                    jobs_to_store.append(job_record)
+                                            
+                                            # Store in job_post_API.db
+                                            if jobs_to_store:
+                                                saved_count = save_matched_jobs_batch(jobs_to_store)
+                                                st.caption(f"💾 Saved {saved_count} jobs above {MATCH_SCORE_THRESHOLD}% match to your profile")
+                                        except Exception as e:
+                                            # Don't block the UI if storage fails
+                                            print(f"Warning: Could not store matched jobs: {e}")
+                                    
                                     # Save to search history
                                     _save_search_to_history(search_keywords, location_preference, matched_jobs)
                                     
@@ -431,6 +458,82 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
 
     else:
         st.warning("⚠️ No matched jobs found. Please try adjusting your search criteria.")
+
+
+def _prepare_job_for_storage(job_seeker_id: str, job: Dict) -> Dict:
+    """
+    Prepare a matched job record for storage in job_post_API.db.
+    
+    This function transforms the matched job data into the format
+    expected by the MatchedJobsDB.save_matched_job() method.
+    
+    Args:
+        job_seeker_id: The job seeker's ID
+        job: Matched job dictionary with scores
+        
+    Returns:
+        Dictionary ready for database storage
+    """
+    import uuid
+    
+    # Handle both nested 'job' structure and flat structure
+    job_data = job.get('job', job)
+    
+    # Generate unique job_id
+    job_url = job_data.get('url', '')
+    job_title = job_data.get('title', '')
+    job_company = job_data.get('company', '')
+    job_id = f"JOB_{uuid.uuid4().hex[:12].upper()}"
+    
+    # Extract scores from result
+    cosine_score = job.get('semantic_score', job.get('similarity_score', 0)) / 100.0
+    match_percentage = int(job.get('combined_score', job.get('combined_match_score', 0)))
+    skill_match_score = job.get('skill_match_percentage', job.get('skill_match_score', 0)) / 100.0
+    
+    # Get matched and missing skills
+    matched_skills = job.get('matched_skills', [])
+    missing_skills = job.get('missing_skills', job_data.get('skills', []))
+    
+    # Handle skills lists
+    required_skills = job_data.get('skills', [])
+    if isinstance(required_skills, list):
+        required_skills_str = ', '.join(required_skills[:20])
+    else:
+        required_skills_str = str(required_skills)
+    
+    if isinstance(matched_skills, list):
+        matched_skills_str = ', '.join(matched_skills[:20])
+    else:
+        matched_skills_str = str(matched_skills)
+    
+    if isinstance(missing_skills, list):
+        missing_skills_str = ', '.join(missing_skills[:10])
+    else:
+        missing_skills_str = str(missing_skills)
+    
+    return {
+        'job_seeker_id': job_seeker_id,
+        'job_id': job_id,
+        'job_title': job_title,
+        'company_name': job_company,
+        'location': job_data.get('location', ''),
+        'job_description': job_data.get('description', '')[:5000],  # Truncate for storage
+        'required_skills': required_skills_str,
+        'preferred_skills': '',
+        'experience_required': job_data.get('experience_level', ''),
+        'salary_min': None,
+        'salary_max': None,
+        'employment_type': job_data.get('job_type', 'Full-time'),
+        'industry': job_data.get('industry', ''),
+        'posted_date': job_data.get('posted_date', ''),
+        'application_url': job_url,
+        'cosine_similarity_score': cosine_score,
+        'match_percentage': match_percentage,
+        'skill_match_score': skill_match_score,
+        'experience_match_score': None,
+        'matched_skills': matched_skills_str,
+        'missing_skills': missing_skills_str
+    }
 
 
 def _save_search_to_history(search_query: str, location: str, results: List[Dict]):
