@@ -47,6 +47,33 @@ def save_job_seeker_info(profile: Dict) -> str:
     return get_job_seeker_db().save_profile(profile)
 
 
-def save_head_hunter_job(job: Dict) -> int:
+def save_head_hunter_job(job: Dict) -> bool:
     """Save headhunter job posting."""
     return get_headhunter_db().save_job(job)
+
+
+# Backward compatibility functions (from old database.py)
+def init_database() -> None:
+    """Initialize job seeker database.
+    
+    Note: Schema is auto-initialized when JobSeekerDB is instantiated.
+    This function exists for backward compatibility.
+    """
+    get_job_seeker_db()  # Triggers schema initialization
+
+
+def init_head_hunter_database() -> None:
+    """Initialize headhunter database.
+    
+    Note: Schema is auto-initialized when HeadhunterDB is instantiated.
+    This function exists for backward compatibility.
+    """
+    get_headhunter_db()  # Triggers schema initialization
+
+
+def get_job_seeker_search_fields(job_seeker_id: str) -> Optional[Dict]:
+    """Get job seeker search fields by ID.
+    
+    Backward compatibility wrapper for JobSeekerDB.get_search_fields().
+    """
+    return get_job_seeker_db().get_search_fields(job_seeker_id)

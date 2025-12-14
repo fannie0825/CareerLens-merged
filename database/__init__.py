@@ -16,6 +16,10 @@ from database.queries import (
     get_all_jobs_for_matching,
     save_job_seeker_info,
     save_head_hunter_job,
+    # Backward compatibility functions
+    init_database,
+    init_head_hunter_database,
+    get_job_seeker_search_fields,
 )
 
 __all__ = [
@@ -31,4 +35,8 @@ __all__ = [
     'get_all_jobs_for_matching',
     'save_job_seeker_info',
     'save_head_hunter_job',
+    # Backward compatibility
+    'init_database',
+    'init_head_hunter_database',
+    'get_job_seeker_search_fields',
 ]
