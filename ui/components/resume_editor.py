@@ -14,7 +14,7 @@ def _get_resume_formatters():
     """Lazy load resume formatters (docx, pdf generation)"""
     global _resume_formatters
     if _resume_formatters is None:
-        from modules.resume_generator import generate_docx_from_json, generate_pdf_from_json, format_resume_as_text
+        from core.resume_generator import generate_docx_from_json, generate_pdf_from_json, format_resume_as_text
         _resume_formatters = {
             'docx': generate_docx_from_json,
             'pdf': generate_pdf_from_json,

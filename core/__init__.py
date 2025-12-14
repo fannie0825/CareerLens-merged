@@ -40,6 +40,12 @@ from .domain_filter import (
     filter_jobs_by_domains,
     DOMAIN_KEYWORDS
 )
+from .resume_generator import (
+    ResumeGenerator,
+    generate_docx_from_json,
+    generate_pdf_from_json,
+    format_resume_as_text
+)
 
 __all__ = [
     # Job Processing
@@ -80,4 +86,10 @@ __all__ = [
     'DomainFilter',
     'filter_jobs_by_domains',
     'DOMAIN_KEYWORDS',
+    
+    # Resume Generation
+    'ResumeGenerator',
+    'generate_docx_from_json',
+    'generate_pdf_from_json',
+    'format_resume_as_text',
 ]
