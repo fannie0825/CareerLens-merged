@@ -46,6 +46,12 @@ from .resume_generator import (
     generate_pdf_from_json,
     format_resume_as_text
 )
+from .semantic_search import (
+    SemanticJobSearch,
+    fetch_jobs_with_cache,
+    is_cache_valid,
+    generate_and_store_resume_embedding
+)
 
 __all__ = [
     # Job Processing
@@ -92,4 +98,10 @@ __all__ = [
     'generate_docx_from_json',
     'generate_pdf_from_json',
     'format_resume_as_text',
+    
+    # Semantic Search
+    'SemanticJobSearch',
+    'fetch_jobs_with_cache',
+    'is_cache_valid',
+    'generate_and_store_resume_embedding',
 ]

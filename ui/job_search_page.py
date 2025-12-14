@@ -33,7 +33,7 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
     # Import WebSocket utilities with fallback
     try:
         from modules.utils.helpers import ProgressTracker, _websocket_keepalive
-        from modules.semantic_search import SemanticJobSearch, fetch_jobs_with_cache
+        from core.semantic_search import SemanticJobSearch, fetch_jobs_with_cache
         from modules.utils import get_embedding_generator, get_job_scraper
         from modules.utils.config import _determine_index_limit
         from ui.components.dashboard import (

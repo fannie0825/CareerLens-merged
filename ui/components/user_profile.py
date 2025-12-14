@@ -2,7 +2,7 @@
 import streamlit as st
 import time
 from modules.resume_upload import extract_text_from_resume, extract_profile_from_resume
-from modules.semantic_search import generate_and_store_resume_embedding
+from core.semantic_search import generate_and_store_resume_embedding
 
 
 def display_user_profile():
