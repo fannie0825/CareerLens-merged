@@ -358,3 +358,78 @@ def init_matched_jobs_database() -> None:
     This function exists for explicit initialization if needed.
     """
     get_matched_jobs_db()  # Triggers schema initialization
+
+
+# ============================================================================
+# NEW FUNCTIONS: Step 0 Cache Check & Unified Access
+# ============================================================================
+
+def has_recent_matches(job_seeker_id: str, max_age_hours: int = 24) -> bool:
+    """Check if job seeker has recent matches (Step 0 optimization).
+    
+    Args:
+        job_seeker_id: The job seeker's ID
+        max_age_hours: Maximum age of matches in hours
+        
+    Returns:
+        True if recent matches exist
+    """
+    return get_matched_jobs_db().has_recent_matches(job_seeker_id, max_age_hours)
+
+
+def get_recent_match_info(job_seeker_id: str, max_age_hours: int = 24) -> Optional[Dict]:
+    """Get info about recent matches for cache decision.
+    
+    Args:
+        job_seeker_id: The job seeker's ID
+        max_age_hours: Maximum age of matches in hours
+        
+    Returns:
+        Dict with count and match times, or None
+    """
+    return get_matched_jobs_db().get_recent_match_info(job_seeker_id, max_age_hours)
+
+
+def get_matched_jobs(
+    job_seeker_id: str,
+    min_match: int = 60,
+    purpose: str = 'general',
+    limit: int = 50
+) -> List[Dict]:
+    """Unified function to get matched jobs with purpose-specific fields.
+    
+    Args:
+        job_seeker_id: The job seeker's ID
+        min_match: Minimum match percentage
+        purpose: 'general', 'resume', or 'interview'
+        limit: Maximum number of results
+        
+    Returns:
+        List of matched job dictionaries
+    """
+    return get_matched_jobs_db().get_matched_jobs(job_seeker_id, min_match, purpose, limit)
+
+
+def cleanup_old_matches(job_seeker_id: str, days: int = 30) -> int:
+    """Delete matches older than X days to keep DB lean.
+    
+    Args:
+        job_seeker_id: The job seeker's ID
+        days: Delete matches older than this many days
+        
+    Returns:
+        Number of records deleted
+    """
+    return get_matched_jobs_db().cleanup_old_matches(job_seeker_id, days)
+
+
+def cleanup_all_old_matches(days: int = 30) -> int:
+    """Delete all matches older than X days (global cleanup).
+    
+    Args:
+        days: Delete matches older than this many days
+        
+    Returns:
+        Number of records deleted
+    """
+    return get_matched_jobs_db().cleanup_all_old_matches(days)

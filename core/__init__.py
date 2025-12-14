@@ -56,6 +56,29 @@ from .semantic_search import (
     is_cache_valid,
     generate_and_store_resume_embedding
 )
+from .job_seeker_flow import (
+    # Step 1: Resume Upload & Profile Creation
+    process_resume_and_create_profile,
+    save_job_seeker_profile,
+    get_job_seeker_profile,
+    # Step 2: Job Matching & API Storage
+    search_and_match_jobs,
+    get_matched_jobs_for_seeker,
+    get_top_matched_jobs,
+    # Step 3: AI Resume & Interview
+    get_job_for_resume_tailoring,
+    generate_tailored_resume_for_job,
+    get_job_for_interview,
+    get_jobs_for_interview_from_matches,
+    convert_matched_job_to_interview_tuple,
+    convert_profile_to_interview_tuple,
+    # Utilities
+    get_current_job_seeker_id,
+    set_current_job_seeker_id,
+    clear_matched_jobs_for_seeker,
+    get_match_statistics,
+    MATCH_SCORE_THRESHOLD
+)
 
 __all__ = [
     # Job Processing
@@ -111,4 +134,23 @@ __all__ = [
     'fetch_jobs_with_cache',
     'is_cache_valid',
     'generate_and_store_resume_embedding',
+    
+    # Job Seeker Data Flow (3-step orchestration)
+    'process_resume_and_create_profile',
+    'save_job_seeker_profile',
+    'get_job_seeker_profile',
+    'search_and_match_jobs',
+    'get_matched_jobs_for_seeker',
+    'get_top_matched_jobs',
+    'get_job_for_resume_tailoring',
+    'generate_tailored_resume_for_job',
+    'get_job_for_interview',
+    'get_jobs_for_interview_from_matches',
+    'convert_matched_job_to_interview_tuple',
+    'convert_profile_to_interview_tuple',
+    'get_current_job_seeker_id',
+    'set_current_job_seeker_id',
+    'clear_matched_jobs_for_seeker',
+    'get_match_statistics',
+    'MATCH_SCORE_THRESHOLD',
 ]
