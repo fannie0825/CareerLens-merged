@@ -233,7 +233,8 @@ def display_market_positioning_profile(matched_jobs, user_profile):
         match_delta = "Room to improve"
     
     # Calculate salary band
-    salary_min, salary_max = calculate_salary_band(matched_jobs)
+    salary_band = calculate_salary_band(matched_jobs)
+    salary_min, salary_max = salary_band['min'], salary_band['max']
     avg_salary = (salary_min + salary_max) // 2
     
     user_salary_expectation = st.session_state.get('salary_expectation', 0)
