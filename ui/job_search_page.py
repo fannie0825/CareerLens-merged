@@ -238,14 +238,71 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
         st.info(f"⏱️ Estimated time: {time_estimates.get(search_mode, '~60 seconds')}")
 
     # -------------------------------------------------------
+    # 🔎 STEP 0: Check for Cached Matches (Optimization)
+    # -------------------------------------------------------
+    use_cached = False
+    cached_matches = []
+    current_job_seeker_id = st.session_state.get('job_seeker_id')
+    
+    if current_job_seeker_id:
+        try:
+            from database.job_post_api_db import MatchedJobsDB
+            matched_db = MatchedJobsDB()
+            cache_info = matched_db.get_recent_match_info(current_job_seeker_id, max_age_hours=24)
+            
+            if cache_info and cache_info.get('count', 0) > 0:
+                st.info(f"💾 **Cached Results Available:** {cache_info['count']} matched jobs from {cache_info['newest_match']}")
+                
+                col_cache1, col_cache2 = st.columns(2)
+                with col_cache1:
+                    if st.button("📂 Use Cached Results", use_container_width=True):
+                        use_cached = True
+                        cached_matches = matched_db.get_matched_jobs(
+                            current_job_seeker_id, 
+                            min_match=0, 
+                            purpose='general',
+                            limit=50
+                        )
+                with col_cache2:
+                    st.caption("Or search for new jobs below ↓")
+        except Exception as e:
+            # Silently continue if cache check fails
+            pass
+    
+    # -------------------------------------------------------
     # 🔎 STEP 2: Search Jobs using Unified SemanticJobSearch
     # -------------------------------------------------------
     # Search button to trigger job search
-    search_button = st.button("🔍 Search Jobs", type="primary", use_container_width=True)
+    search_button = st.button("🔍 Search New Jobs", type="primary", use_container_width=True)
     
     matched_jobs = st.session_state.get('matched_jobs', [])
     
-    if search_button:
+    # Handle cached results (Step 0)
+    if use_cached and cached_matches:
+        st.success(f"✅ Loaded {len(cached_matches)} cached matched jobs!")
+        # Convert DB format to display format
+        matched_jobs = []
+        for job in cached_matches:
+            matched_jobs.append({
+                'job': {
+                    'title': job.get('job_title', ''),
+                    'company': job.get('company_name', ''),
+                    'location': job.get('location', ''),
+                    'description': job.get('job_description', ''),
+                    'skills': [s.strip() for s in job.get('required_skills', '').split(',') if s.strip()],
+                    'url': job.get('application_url', ''),
+                    'posted_date': job.get('posted_date', ''),
+                    'job_type': job.get('employment_type', ''),
+                    'id': job.get('job_id', '')
+                },
+                'combined_score': job.get('match_percentage', 0),
+                'semantic_score': (job.get('cosine_similarity_score', 0) or 0) * 100,
+                'skill_match_percentage': (job.get('skill_match_score', 0) or 0) * 100,
+                'matched_skills': [s.strip() for s in job.get('matched_skills', '').split(',') if s.strip()],
+                'missing_skills': [s.strip() for s in job.get('missing_skills', '').split(',') if s.strip()],
+            })
+        st.session_state.matched_jobs = matched_jobs
+    elif search_button:
         if not MODULES_AVAILABLE:
             st.error("⚠️ Search modules not available. Please check your installation.")
             matched_jobs = []

@@ -51,6 +51,14 @@ from database.queries import (
     delete_matches_for_seeker,
     get_match_statistics,
     get_all_matched_jobs,
+    # Step 0: Cache check functions
+    has_recent_matches,
+    get_recent_match_info,
+    # Unified access function
+    get_matched_jobs,
+    # Cleanup functions
+    cleanup_old_matches,
+    cleanup_all_old_matches,
     # Backward compatibility functions
     init_database,
     init_head_hunter_database,
@@ -90,6 +98,14 @@ __all__ = [
     'delete_matches_for_seeker',
     'get_match_statistics',
     'get_all_matched_jobs',
+    # Step 0: Cache check functions
+    'has_recent_matches',
+    'get_recent_match_info',
+    # Unified access function
+    'get_matched_jobs',
+    # Cleanup functions
+    'cleanup_old_matches',
+    'cleanup_all_old_matches',
     # Backward compatibility
     'init_database',
     'init_head_hunter_database',

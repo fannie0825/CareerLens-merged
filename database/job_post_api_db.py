@@ -109,6 +109,15 @@ class MatchedJobsDB:
                 CREATE INDEX IF NOT EXISTS idx_match_percentage
                 ON matched_jobs(match_percentage DESC)
             """)
+            # Composite indexes for common query patterns (Step 2 improvement)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_job_seeker_match 
+                ON matched_jobs(job_seeker_id, match_percentage DESC)
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_job_seeker_date 
+                ON matched_jobs(job_seeker_id, matched_at DESC)
+            """)
     
     def save_matched_job(self, job_data: Dict) -> int:
         """Save a matched job to the database.
@@ -417,3 +426,228 @@ class MatchedJobsDB:
                 SELECT DISTINCT job_seeker_id FROM matched_jobs
             """)
             return [row['job_seeker_id'] for row in cursor.fetchall()]
+    
+    # =========================================================================
+    # STEP 0: Cache Check Functions (Improvement #3)
+    # =========================================================================
+    
+    def has_recent_matches(
+        self, 
+        job_seeker_id: str, 
+        max_age_hours: int = 24
+    ) -> bool:
+        """Check if job seeker has recent matches (Step 0 optimization).
+        
+        This avoids unnecessary API calls by checking if we have
+        cached matches that are still fresh.
+        
+        Args:
+            job_seeker_id: The job seeker's ID
+            max_age_hours: Maximum age of matches in hours (default 24)
+            
+        Returns:
+            True if recent matches exist, False otherwise
+        """
+        with self.get_connection() as conn:
+            cursor = conn.execute("""
+                SELECT COUNT(*) as count FROM matched_jobs 
+                WHERE job_seeker_id = ? 
+                AND matched_at >= datetime('now', ?)
+            """, (job_seeker_id, f'-{max_age_hours} hours'))
+            row = cursor.fetchone()
+            return row['count'] > 0 if row else False
+    
+    def get_recent_match_info(
+        self, 
+        job_seeker_id: str, 
+        max_age_hours: int = 24
+    ) -> Optional[Dict]:
+        """Get info about recent matches for cache decision.
+        
+        Step 0: Check if recent matches exist (< 24 hours)
+            → If yes, use cached matches from job_post_API.db
+            → If no, proceed to Step 2 (fetch fresh from API)
+        
+        Args:
+            job_seeker_id: The job seeker's ID
+            max_age_hours: Maximum age of matches in hours
+            
+        Returns:
+            Dict with count and newest_match_time, or None
+        """
+        with self.get_connection() as conn:
+            cursor = conn.execute("""
+                SELECT 
+                    COUNT(*) as count,
+                    MAX(matched_at) as newest_match,
+                    MIN(matched_at) as oldest_match
+                FROM matched_jobs 
+                WHERE job_seeker_id = ? 
+                AND matched_at >= datetime('now', ?)
+            """, (job_seeker_id, f'-{max_age_hours} hours'))
+            row = cursor.fetchone()
+            if row and row['count'] > 0:
+                return {
+                    'count': row['count'],
+                    'newest_match': row['newest_match'],
+                    'oldest_match': row['oldest_match'],
+                    'is_fresh': True
+                }
+            return None
+    
+    # =========================================================================
+    # UNIFIED FUNCTION (Improvement #4)
+    # =========================================================================
+    
+    def get_matched_jobs(
+        self,
+        job_seeker_id: str,
+        min_match: int = 60,
+        purpose: str = 'general',
+        limit: int = 50
+    ) -> List[Dict]:
+        """Unified function to get matched jobs with purpose-specific fields.
+        
+        This is a cleaner API that serves multiple use cases:
+        - purpose='general': All fields for display
+        - purpose='resume': Fields needed for resume tailoring
+        - purpose='interview': Fields needed for interview questions
+        
+        Args:
+            job_seeker_id: The job seeker's ID
+            min_match: Minimum match percentage (default 60)
+            purpose: 'general', 'resume', or 'interview'
+            limit: Maximum number of results
+            
+        Returns:
+            List of matched job dictionaries
+        """
+        # Define field selections based on purpose
+        if purpose == 'interview':
+            fields = """
+                id, job_id, job_title, job_description, required_skills,
+                company_name, industry, experience_required, match_percentage,
+                location, matched_skills, missing_skills
+            """
+        elif purpose == 'resume':
+            fields = """
+                id, job_id, job_title, job_description, required_skills,
+                preferred_skills, company_name, location, employment_type,
+                match_percentage, matched_skills, missing_skills, application_url
+            """
+        else:  # general
+            fields = "*"
+        
+        with self.get_connection() as conn:
+            cursor = conn.execute(f"""
+                SELECT {fields} FROM matched_jobs 
+                WHERE job_seeker_id = ? 
+                AND (match_percentage >= ? OR match_percentage IS NULL)
+                ORDER BY match_percentage DESC, cosine_similarity_score DESC
+                LIMIT ?
+            """, (job_seeker_id, min_match, limit))
+            return [dict(row) for row in cursor.fetchall()]
+    
+    # =========================================================================
+    # CLEANUP FUNCTIONS (Improvement #5)
+    # =========================================================================
+    
+    def cleanup_old_matches(
+        self, 
+        job_seeker_id: str, 
+        days: int = 30
+    ) -> int:
+        """Delete matches older than X days to keep DB lean.
+        
+        Args:
+            job_seeker_id: The job seeker's ID
+            days: Delete matches older than this many days (default 30)
+            
+        Returns:
+            Number of records deleted
+        """
+        with self.get_connection() as conn:
+            cursor = conn.execute("""
+                DELETE FROM matched_jobs 
+                WHERE job_seeker_id = ? 
+                AND matched_at < datetime('now', ?)
+            """, (job_seeker_id, f'-{days} days'))
+            return cursor.rowcount
+    
+    def cleanup_all_old_matches(self, days: int = 30) -> int:
+        """Delete all matches older than X days (global cleanup).
+        
+        Args:
+            days: Delete matches older than this many days (default 30)
+            
+        Returns:
+            Number of records deleted
+        """
+        with self.get_connection() as conn:
+            cursor = conn.execute("""
+                DELETE FROM matched_jobs 
+                WHERE matched_at < datetime('now', ?)
+            """, (f'-{days} days',))
+            return cursor.rowcount
+    
+    def cleanup_low_matches(
+        self, 
+        job_seeker_id: str, 
+        min_match: int = 50,
+        keep_count: int = 20
+    ) -> int:
+        """Delete low-quality matches, keeping only top N.
+        
+        Useful for keeping the database lean while preserving best matches.
+        
+        Args:
+            job_seeker_id: The job seeker's ID
+            min_match: Minimum match percentage to keep
+            keep_count: Keep at least this many top matches
+            
+        Returns:
+            Number of records deleted
+        """
+        with self.get_connection() as conn:
+            # First, get IDs of top matches to keep
+            cursor = conn.execute("""
+                SELECT id FROM matched_jobs 
+                WHERE job_seeker_id = ?
+                ORDER BY match_percentage DESC
+                LIMIT ?
+            """, (job_seeker_id, keep_count))
+            keep_ids = [row['id'] for row in cursor.fetchall()]
+            
+            if not keep_ids:
+                return 0
+            
+            # Delete matches that are:
+            # 1. Below min_match threshold AND
+            # 2. Not in the top N matches
+            placeholders = ','.join('?' * len(keep_ids))
+            cursor = conn.execute(f"""
+                DELETE FROM matched_jobs 
+                WHERE job_seeker_id = ? 
+                AND match_percentage < ?
+                AND id NOT IN ({placeholders})
+            """, [job_seeker_id, min_match] + keep_ids)
+            return cursor.rowcount
+    
+    def get_database_stats(self) -> Dict:
+        """Get overall database statistics.
+        
+        Returns:
+            Dictionary with database statistics
+        """
+        with self.get_connection() as conn:
+            cursor = conn.execute("""
+                SELECT 
+                    COUNT(*) as total_records,
+                    COUNT(DISTINCT job_seeker_id) as unique_seekers,
+                    AVG(match_percentage) as avg_match_pct,
+                    MIN(matched_at) as oldest_match,
+                    MAX(matched_at) as newest_match
+                FROM matched_jobs
+            """)
+            row = cursor.fetchone()
+            return dict(row) if row else {}
