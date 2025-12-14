@@ -771,9 +771,9 @@ def extract_text_from_resume(uploaded_file) -> Optional[str]:
 
 def _get_utils_for_profile():
     """Lazy load utility functions to avoid circular imports"""
-    from modules.utils import get_text_generator, api_call_with_retry
-    from modules.utils.helpers import _websocket_keepalive
-    from modules.utils.config import ENABLE_PROFILE_PASS2
+    from utils import get_text_generator, api_call_with_retry
+    from utils.helpers import _websocket_keepalive
+    from utils.config import ENABLE_PROFILE_PASS2
     return {
         'get_text_generator': get_text_generator,
         'api_call_with_retry': api_call_with_retry,

@@ -59,9 +59,9 @@ def _get_chromadb():
 
 def _get_utils():
     """Lazy load utility functions to avoid circular imports"""
-    from modules.utils import get_token_tracker, get_embedding_generator
-    from modules.utils.helpers import _websocket_keepalive, _ensure_websocket_alive, _chunked_sleep
-    from modules.utils.config import DEFAULT_MAX_JOBS_TO_INDEX, USE_FAST_SKILL_MATCHING
+    from utils import get_token_tracker, get_embedding_generator
+    from utils.helpers import _websocket_keepalive, _ensure_websocket_alive, _chunked_sleep
+    from utils.config import DEFAULT_MAX_JOBS_TO_INDEX, USE_FAST_SKILL_MATCHING
     return {
         'get_token_tracker': get_token_tracker,
         'get_embedding_generator': get_embedding_generator,

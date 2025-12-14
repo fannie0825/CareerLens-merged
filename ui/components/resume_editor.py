@@ -3,7 +3,7 @@ import json
 import streamlit as st
 import time
 import requests
-from modules.utils import get_text_generator, get_embedding_generator, api_call_with_retry
+from utils import get_text_generator, get_embedding_generator, api_call_with_retry
 from ui.components.match_feedback import display_match_score_feedback
 
 # Lazy imports for heavy resume generation modules (docx, reportlab)

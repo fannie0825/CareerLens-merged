@@ -35,7 +35,7 @@ def resume_upload_page():
     
     # Import WebSocket utilities with fallback
     try:
-        from modules.utils.helpers import ProgressTracker, _websocket_keepalive
+        from utils.helpers import ProgressTracker, _websocket_keepalive
     except ImportError:
         # Fallback implementations
         def _websocket_keepalive(message=None, force=False):
