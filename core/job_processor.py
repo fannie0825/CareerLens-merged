@@ -196,9 +196,16 @@ class JobSeekerBackend:
         from openai import AzureOpenAI
         import json
         
+        # Clean endpoint to prevent double /openai path issues
+        endpoint = Config.AZURE_OPENAI_ENDPOINT
+        if endpoint:
+            endpoint = endpoint.rstrip('/')
+            if endpoint.endswith('/openai'):
+                endpoint = endpoint[:-7]
+        
         # Use Azure OpenAI client
         client = AzureOpenAI(
-            azure_endpoint=Config.AZURE_OPENAI_ENDPOINT,
+            azure_endpoint=endpoint,
             api_key=Config.AZURE_OPENAI_API_KEY,
             api_version=Config.AZURE_OPENAI_API_VERSION
         )

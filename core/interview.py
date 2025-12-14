@@ -60,8 +60,16 @@ def generate_interview_question(job_data: tuple, seeker_profile: tuple,
             return f"Error: {error_msg}"
         
         from openai import AzureOpenAI
+        
+        # Clean endpoint to prevent double /openai path issues
+        endpoint = config.AZURE_ENDPOINT
+        if endpoint:
+            endpoint = endpoint.rstrip('/')
+            if endpoint.endswith('/openai'):
+                endpoint = endpoint[:-7]
+        
         client = AzureOpenAI(
-            azure_endpoint=config.AZURE_ENDPOINT,
+            azure_endpoint=endpoint,
             api_key=config.AZURE_API_KEY,
             api_version=config.AZURE_API_VERSION
         )
@@ -175,8 +183,16 @@ def evaluate_answer(question: str, answer: str, job_data: tuple, config=None) ->
             return f'{{"error": "{error_msg}"}}'
         
         from openai import AzureOpenAI
+        
+        # Clean endpoint to prevent double /openai path issues
+        endpoint = config.AZURE_ENDPOINT
+        if endpoint:
+            endpoint = endpoint.rstrip('/')
+            if endpoint.endswith('/openai'):
+                endpoint = endpoint[:-7]
+        
         client = AzureOpenAI(
-            azure_endpoint=config.AZURE_ENDPOINT,
+            azure_endpoint=endpoint,
             api_key=config.AZURE_API_KEY,
             api_version=config.AZURE_API_VERSION
         )
@@ -254,8 +270,16 @@ def generate_final_summary(interview_data: Dict, job_data: tuple, config=None) -
             return f'{{"error": "{error_msg}"}}'
         
         from openai import AzureOpenAI
+        
+        # Clean endpoint to prevent double /openai path issues
+        endpoint = config.AZURE_ENDPOINT
+        if endpoint:
+            endpoint = endpoint.rstrip('/')
+            if endpoint.endswith('/openai'):
+                endpoint = endpoint[:-7]
+        
         client = AzureOpenAI(
-            azure_endpoint=config.AZURE_ENDPOINT,
+            azure_endpoint=endpoint,
             api_key=config.AZURE_API_KEY,
             api_version=config.AZURE_API_VERSION
         )
