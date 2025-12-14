@@ -5,8 +5,9 @@ This module contains all API client classes including:
 - APIMEmbeddingGenerator: Azure OpenAI embedding generation
 - AzureOpenAITextGenerator: Azure OpenAI text generation  
 - RateLimiter: Rate limiting for API calls
-- IndeedScraperAPI: Job scraping via RapidAPI
 - TokenUsageTracker: Token usage tracking
+
+Note: IndeedScraperAPI is now in backend.py (centralized job search)
 """
 
 import os
@@ -646,117 +647,6 @@ class RateLimiter:
         self.request_times.append(time.time())
 
 
-class IndeedScraperAPI:
-    """Job scraper using Indeed Scraper API via RapidAPI."""
-    def __init__(self, api_key):
-        self.api_key = api_key
-        self.url = "https://indeed-scraper-api.p.rapidapi.com/api/job"
-        self.headers = {
-            'Content-Type': 'application/json',
-            'x-rapidapi-host': 'indeed-scraper-api.p.rapidapi.com',
-            'x-rapidapi-key': api_key
-        }
-        self.rate_limiter = RateLimiter(RAPIDAPI_MAX_REQUESTS_PER_MINUTE)
-    
-    def search_jobs(self, query, location="Hong Kong", max_rows=15, job_type="fulltime", country="hk"):
-        """Search for jobs using Indeed Scraper API.
-        
-        Includes WebSocket keepalive calls to prevent connection timeouts
-        during the job search API call.
-        """
-        from .helpers import _websocket_keepalive, api_call_with_retry, _ensure_websocket_alive
-        
-        payload = {
-            "scraper": {
-                "maxRows": max_rows,
-                "query": query,
-                "location": location,
-                "jobType": job_type,
-                "radius": "50",
-                "sort": "relevance",
-                "fromDays": "7",
-                "country": country
-            }
-        }
-        
-        try:
-            _websocket_keepalive("Preparing job search...", force=True)
-            self.rate_limiter.wait_if_needed()
-            _websocket_keepalive("Searching jobs...")
-            
-            def make_request():
-                return requests.post(self.url, headers=self.headers, json=payload, timeout=60)
-            
-            response = api_call_with_retry(make_request, max_retries=3, initial_delay=3)
-            
-            # Keepalive after API response
-            _ensure_websocket_alive()
-            
-            if response and response.status_code == 201:
-                data = response.json()
-                jobs = []
-                
-                _websocket_keepalive("Processing job results...")
-                
-                if 'returnvalue' in data and 'data' in data['returnvalue']:
-                    job_list = data['returnvalue']['data']
-                    
-                    for idx, job_data in enumerate(job_list):
-                        # Keepalive every 5 jobs during parsing
-                        if idx % 5 == 0:
-                            _ensure_websocket_alive()
-                        parsed_job = self._parse_job(job_data)
-                        if parsed_job:
-                            jobs.append(parsed_job)
-                
-                _websocket_keepalive("Job search complete", force=True)
-                return jobs
-            else:
-                if response:
-                    if response.status_code == 429:
-                        st.error("🚫 Rate limit reached for Indeed API. Please wait a few minutes and try again.")
-                    else:
-                        error_detail = response.text[:200] if response.text else "No error details"
-                        st.error(f"API Error: {response.status_code} - {error_detail}")
-                return []
-                
-        except Exception as e:
-            st.error(f"Error: {e}")
-            return []
-    
-    def _parse_job(self, job_data):
-        """Parse job data from API response."""
-        try:
-            location_data = job_data.get('location', {})
-            location = location_data.get('formattedAddressShort') or location_data.get('city', 'Hong Kong')
-            
-            job_types = job_data.get('jobType', [])
-            job_type = ', '.join(job_types) if job_types else 'Full-time'
-            
-            benefits = job_data.get('benefits', [])
-            attributes = job_data.get('attributes', [])
-            
-            full_description = job_data.get('descriptionText', 'No description')
-            description = full_description[:50000] if len(full_description) > 50000 else full_description
-            
-            return {
-                'title': job_data.get('title', 'N/A'),
-                'company': job_data.get('companyName', 'N/A'),
-                'location': location,
-                'description': description,
-                'salary': 'Not specified',
-                'job_type': job_type,
-                'url': job_data.get('jobUrl', '#'),
-                'posted_date': job_data.get('age', 'Recently'),
-                'benefits': benefits[:5],
-                'skills': attributes[:10],
-                'company_rating': job_data.get('rating', {}).get('rating', 0),
-                'is_remote': job_data.get('isRemote', False)
-            }
-        except:
-            return None
-
-
 class TokenUsageTracker:
     """Tracks token usage and costs for API calls."""
     def __init__(self):
@@ -862,11 +752,13 @@ def get_text_generator():
 
 
 def get_job_scraper():
-    """Get Indeed job scraper."""
+    """Get Indeed job scraper from backend.py."""
     if 'job_scraper' not in st.session_state:
         RAPIDAPI_KEY = st.secrets.get("RAPIDAPI_KEY", "")
         if not RAPIDAPI_KEY:
             st.error("⚠️ RAPIDAPI_KEY is required in secrets.")
             return None
-        st.session_state.job_scraper = IndeedScraperAPI(RAPIDAPI_KEY)
+        # Import from backend.py to use the centralized IndeedScraperAPI
+        from backend import IndeedScraperAPI as BackendIndeedScraperAPI
+        st.session_state.job_scraper = BackendIndeedScraperAPI(RAPIDAPI_KEY)
     return st.session_state.job_scraper

@@ -86,8 +86,6 @@ def _get_numpy():
     return _np
 
 from backend import JobSeekerBackend
-from backend import LinkedInJobSearcher
-from backend import get_linkedin_job_searcher
 from backend import get_all_jobs_for_matching
 from backend import get_all_job_seekers
 from backend import analyze_match_simple
@@ -246,36 +244,6 @@ def display_resume_generator_ui(job, user_profile, resume_text=None):
                     )
             else:
                 st.error("❌ Failed to generate resume. Please try again.")
-
-
-def display_domain_filter_ui():
-    """Display domain/industry filter UI (from CareerLens)"""
-    st.markdown("### 🏭 Filter by Industry")
-    
-    target_domains = st.multiselect(
-        "Target Domains",
-        options=["FinTech", "ESG & Sustainability", "Data Analytics", "Digital Transformation", 
-                "Investment Banking", "Consulting", "Technology", "Healthcare", "Education",
-                "Real Estate", "Retail & E-commerce", "Marketing & Advertising", "Legal", 
-                "Human Resources", "Operations"],
-        default=st.session_state.get('target_domains', []),
-        help="Select industries/domains to search for jobs",
-        key="domain_filter"
-    )
-    st.session_state.target_domains = target_domains
-    
-    salary_expectation = st.slider(
-        "Min. Monthly Salary (HKD)",
-        min_value=0,
-        max_value=150000,
-        value=st.session_state.get('salary_expectation', 0),
-        step=5000,
-        help="Set to 0 to disable salary filtering",
-        key="salary_filter"
-    )
-    st.session_state.salary_expectation = salary_expectation
-    
-    return target_domains, salary_expectation
 
 
 def display_token_usage():
@@ -2411,62 +2379,6 @@ if st.sidebar.button("📋 Job Posting", use_container_width=True, key="job_post
     st.session_state.current_page = "head_hunter"
 if st.sidebar.button("🔍 Recruitment Match", use_container_width=True, key="recruitment_match_btn"):
     st.session_state.current_page = "recruitment_match"
-
-st.sidebar.markdown("---")
-
-# Add CareerLens tools
-with st.sidebar:
-    st.subheader("🔍 CareerLens Tools")
-    
-    # Display domain filter
-    if st.session_state.current_page == "job_recommendations":
-        with st.expander("🏭 Industry Filters", expanded=False):
-            target_domains = st.multiselect(
-                "Target Domains",
-                options=["FinTech", "ESG & Sustainability", "Data Analytics", "Digital Transformation", 
-                        "Investment Banking", "Consulting", "Technology", "Healthcare", "Education"],
-                default=st.session_state.get('target_domains', []),
-                key="sidebar_domain_filter"
-            )
-            st.session_state.target_domains = target_domains
-            
-            salary_exp = st.slider(
-                "Min. Salary (HKD)",
-                min_value=0,
-                max_value=150000,
-                value=st.session_state.get('salary_expectation', 0),
-                step=5000,
-                key="sidebar_salary_filter"
-            )
-            st.session_state.salary_expectation = salary_exp
-    
-    # Display token usage
-    display_token_usage()
-    
-    st.markdown("---")
-    st.subheader("🔧 Database Debug")
-    
-    if st.button("View All Job Seeker Records"):
-        try:
-            conn = sqlite3.connect('job_seeker.db')
-            c = conn.cursor()
-            c.execute("SELECT job_seeker_id, timestamp, education_level, primary_role FROM job_seekers ORDER BY id DESC")
-            results = c.fetchall()
-            conn.close()
-            
-            if results:
-                st.write("📋 All Job Seeker Records:")
-                for record in results:
-                    st.write(f"- ID: {record[0]}, Time: {record[1]}, Education: {record[2]}, Role: {record[3]}")
-            else:
-                st.write("No job seeker records yet")
-        except Exception as e:
-            st.error(f"Query failed: {e}")
-    
-    # Display current session state
-    current_id = st.session_state.get('job_seeker_id')
-    if current_id:
-        st.info(f"Current Session ID: **{current_id}**")
 
 # Page routing
 if st.session_state.current_page == "main":

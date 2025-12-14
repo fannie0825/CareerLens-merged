@@ -22,7 +22,6 @@ from .api_clients import (
     APIMEmbeddingGenerator,
     AzureOpenAITextGenerator,
     RateLimiter,
-    IndeedScraperAPI,
     TokenUsageTracker,
     get_token_tracker,
     get_embedding_generator,

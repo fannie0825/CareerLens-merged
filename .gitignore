@@ -46,6 +46,7 @@ uploads/
 
 # Database files (if local)
 *.db
+.chroma_db/
 
 # Logs
 *.log
