@@ -11,7 +11,7 @@ import json
 import streamlit as st
 from typing import Dict, Optional
 
-from database.queries import get_jobs_for_interview, get_job_seeker_profile, get_job_seeker_profile_tuple
+from database.queries import get_jobs_for_interview, get_job_seeker_profile_tuple
 from core.interview import (
     initialize_interview_session,
     generate_interview_question,
@@ -211,7 +211,7 @@ def ai_interview_dashboard():
 
     # Quick statistics
     jobs = get_jobs_for_interview()
-    seeker_profile = get_job_seeker_profile()
+    seeker_profile = get_job_seeker_profile_tuple()
 
     col1, col2, col3 = st.columns(3)
     with col1:
