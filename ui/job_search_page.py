@@ -36,7 +36,7 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
         from modules.semantic_search import SemanticJobSearch, fetch_jobs_with_cache
         from modules.utils import get_embedding_generator, get_job_scraper
         from modules.utils.config import _determine_index_limit
-        from modules.ui import (
+        from ui.components.dashboard import (
             display_market_positioning_profile,
             calculate_match_scores
         )
@@ -76,7 +76,7 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
                     self.progress_bar.progress(progress, text=display_message)
 
     # Import visualization functions
-    from .visualizations import create_enhanced_visualizations, create_job_comparison_radar
+    from ui.visualizations import create_enhanced_visualizations, create_job_comparison_radar
     
     # Import resume generator UI
     try:

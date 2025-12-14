@@ -3,7 +3,7 @@ import streamlit as st
 import time
 from modules.resume_upload import extract_text_from_resume, extract_profile_from_resume
 from modules.semantic_search import generate_and_store_resume_embedding
-from .dashboard import display_skill_matching_matrix
+from ui.components.dashboard import display_skill_matching_matrix
 
 
 def render_sidebar():

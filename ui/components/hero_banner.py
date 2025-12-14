@@ -1,6 +1,6 @@
 """Hero banner component"""
 import streamlit as st
-from .styles import get_logo_html
+from ui.components.styles import get_logo_html
 
 
 def render_hero_banner(user_profile, matched_jobs=None):

@@ -24,8 +24,8 @@ def tailored_resume_page():
     """AI-powered Tailored Resume Page - Generate job-specific resumes with AI"""
     # Check if modules are available
     try:
-        from modules.ui.styles import render_styles
-        from modules.ui import display_resume_generator as modular_display_resume_generator
+        from ui.components.styles import render_styles
+        from ui.components.resume_editor import display_resume_generator as modular_display_resume_generator
         MODULES_AVAILABLE = True
     except ImportError:
         MODULES_AVAILABLE = False

@@ -74,8 +74,8 @@ try:
         _ensure_websocket_alive,
         ProgressTracker
     )
-    from modules.ui.styles import render_styles
-    from modules.ui import (
+    from ui.components.styles import render_styles
+    from ui import (
         # Page modules
         main_analyzer_page,
         job_recommendations_page,
@@ -145,7 +145,7 @@ except ImportError as e:
     
     # Import page modules directly if modular UI failed
     try:
-        from modules.ui.pages import (
+        from ui import (
             main_analyzer_page,
             job_recommendations_page,
             enhanced_head_hunter_page,
