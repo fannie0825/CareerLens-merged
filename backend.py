@@ -1418,32 +1418,38 @@ Return JSON with this EXACT structure:
     "simple_search_terms": ["term1", "term2", "term3"],
     "confidence": 0.95,
     "seniority_level": "Junior/Mid-Level/Senior/Lead/Executive",
-    "skills": ["skill1", "skill2", "skill3", ...],
+    "skills": ["Python", "SQL", "Excel", "Data Analysis", "Machine Learning", "...extract 15-25 skills total..."],
     "core_strengths": ["strength1", "strength2", "strength3"],
     "job_search_keywords": ["keyword1", "keyword2"],
     "optimal_search_query": "Simple search string (just the job title)",
     "location_preference": "Detected or 'United States'",
     "industries": ["industry1", "industry2"],
     "alternative_roles": ["role1", "role2", "role3"]
-}"""
+}
+
+CRITICAL: The "skills" array MUST contain 15-25 skills minimum. Extract EVERY skill mentioned or implied in the resume."""
 
         user_prompt = f"""Analyze this resume and extract ALL information:
 
 RESUME:
 {resume_text}
 
-IMPORTANT - Extract ALL skills including:
-- Programming languages (Python, R, SQL, etc.)
-- Tools and software (Tableau, Salesforce, Excel, etc.)
-- Methodologies (Agile, Scrum, Kanban, etc.)
-- Soft skills (Leadership, Communication, etc.)
-- Domain expertise (Banking, Finance, Analytics, etc.)
-- Technical skills (Data Analysis, Machine Learning, etc.)
-- Languages (English, Cantonese, Mandarin, etc.)
+CRITICAL - You MUST extract a COMPREHENSIVE list of 15-25+ skills including:
+- Programming languages (Python, R, SQL, Java, JavaScript, C++, etc.)
+- Tools and software (Tableau, Power BI, Salesforce, Excel, etc.)
+- Cloud platforms (AWS, Azure, GCP, etc.)
+- Frameworks and libraries (React, TensorFlow, Pandas, etc.)
+- Databases (PostgreSQL, MongoDB, MySQL, etc.)
+- Methodologies (Agile, Scrum, Kanban, Waterfall, etc.)
+- Soft skills (Leadership, Communication, Problem Solving, etc.)
+- Domain expertise (Banking, Finance, Analytics, Risk Management, etc.)
+- Technical skills (Data Analysis, Machine Learning, API Development, etc.)
+- Languages spoken (English, Cantonese, Mandarin, etc.)
+- Any tools, technologies, or competencies mentioned or implied in the resume
 
 For job search, provide SIMPLE terms that would work on LinkedIn/Indeed (not complex boolean queries).
 
-Be thorough and creative!"""
+Be thorough - scan the ENTIRE resume including job descriptions, achievements, and education for skills!"""
 
         try:
             # Check if API keys are configured before attempting API call
@@ -1463,7 +1469,7 @@ Be thorough and creative!"""
                     {"role": "user", "content": user_prompt}
                 ],
                 temperature=0.7,
-                max_tokens=2000,
+                max_tokens=2500,
                 response_format={"type": "json_object"}
             )
             
