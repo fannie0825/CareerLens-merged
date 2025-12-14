@@ -86,8 +86,6 @@ def _get_numpy():
     return _np
 
 from backend import JobSeekerBackend
-from backend import LinkedInJobSearcher
-from backend import get_linkedin_job_searcher
 from backend import get_all_jobs_for_matching
 from backend import get_all_job_seekers
 from backend import analyze_match_simple

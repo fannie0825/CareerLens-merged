@@ -1496,261 +1496,6 @@ Be thorough - scan the ENTIRE resume including job descriptions, achievements, a
 
 
 # ============================================================================
-# LINKEDIN JOB SEARCHER - WITH BETTER ERROR HANDLING
-# ============================================================================
-
-class LinkedInJobSearcher:
-    """Search for jobs using RapidAPI LinkedIn API"""
-    
-    def __init__(self, api_key: str):
-        self.api_key = api_key
-        self.base_url = "https://linkedin-job-search-api.p.rapidapi.com/active-jb-7d"
-        self.headers = {
-            "x-rapidapi-key": api_key,
-            "x-rapidapi-host": "linkedin-job-search-api.p.rapidapi.com"
-        }
-    
-    def test_api_connection(self) -> Tuple[bool, str]:
-        """Test if the API is working"""
-        try:
-            querystring = {
-                "limit": "5",
-                "offset": "0",
-                "title_filter": "\"Engineer\"",
-                "location_filter": "\"Hong Kong\"",
-                "description_type": "text"
-            }
-            
-            response = requests.get(
-                self.base_url,
-                headers=self.headers,
-                params=querystring,
-                timeout=10
-            )
-            
-            if response.status_code == 200:
-                return True, "API is working"
-            elif response.status_code == 403:
-                return False, "API key is invalid or expired (403 Forbidden)"
-            elif response.status_code == 429:
-                return False, "Rate limit exceeded (429 Too Many Requests)"
-            else:
-                return False, f"API returned status code {response.status_code}"
-        
-        except Exception as e:
-            return False, f"Connection error: {str(e)}"
-    
-    def search_jobs(
-        self,
-        keywords: str,
-        location: str = "Hong Kong",
-        limit: int = 20
-    ) -> List[Dict]:
-        """Search LinkedIn jobs with simplified queries"""
-        
-        # Simplify complex queries
-        simple_keywords = self._simplify_query(keywords)
-        
-        querystring = {
-            "limit": str(limit),
-            "offset": "0",
-            "title_filter": f'"{simple_keywords}"',
-            "location_filter": f'"{location}"',
-            "description_type": "text"
-        }
-        
-        try:
-            print(f"🔍 Searching RapidAPI...")
-            print(f"   Original query: {keywords}")
-            print(f"   Simplified to: {simple_keywords}")
-            print(f"   Location: {location}")
-            
-            response = requests.get(
-                self.base_url, 
-                headers=self.headers, 
-                params=querystring, 
-                timeout=30
-            )
-            
-            print(f"📊 API Response Status: {response.status_code}")
-            
-            if response.status_code == 403:
-                print("❌ API Key Error: 403 Forbidden")
-                print("   Your RapidAPI key might be invalid or expired")
-                print("   Check: https://rapidapi.com/")
-                return []
-            
-            elif response.status_code == 429:
-                print("❌ Rate Limit: 429 Too Many Requests")
-                print("   Wait a few minutes or upgrade your RapidAPI plan")
-                return []
-            
-            elif response.status_code != 200:
-                print(f"❌ API Error: {response.status_code}")
-                print(f"   Response: {response.text[:200]}")
-                return []
-            
-            data = response.json()
-            
-            # Handle different response formats
-            if isinstance(data, list):
-                jobs = data
-            elif isinstance(data, dict):
-                jobs = data.get('data', data.get('jobs', data.get('results', [])))
-            else:
-                jobs = []
-            
-            if not jobs:
-                print(f"⚠️ No jobs found for '{simple_keywords}'")
-                print("   Trying fallback searches...")
-                
-                # Try alternative searches
-                for alternative in self._get_alternative_searches(simple_keywords):
-                    alt_jobs = self._try_alternative_search(alternative, location, 10)
-                    if alt_jobs:
-                        print(f"✅ Found {len(alt_jobs)} jobs with alternative search: {alternative}")
-                        jobs.extend(alt_jobs)
-                        if len(jobs) >= 10:
-                            break
-            
-            normalized = self._normalize_jobs(jobs)
-            print(f"✅ Retrieved {len(normalized)} jobs from RapidAPI")
-            return normalized
-            
-        except Exception as e:
-            print(f"❌ LinkedIn API Error: {str(e)}")
-            return []
-    
-    def _simplify_query(self, query: str) -> str:
-        """Simplify complex boolean queries to simple terms"""
-        # Remove boolean operators and parentheses
-        simple = query.replace(" OR ", " ").replace(" AND ", " ")
-        simple = simple.replace("(", "").replace(")", "")
-        simple = simple.replace('"', "")
-        
-        # Take first few words (most important)
-        words = simple.split()[:3]
-        return " ".join(words)
-    
-    def _get_alternative_searches(self, primary_query: str) -> List[str]:
-        """Generate alternative search terms"""
-        alternatives = [
-            primary_query.split()[0] if primary_query.split() else primary_query,  # First word only
-            "Manager",  # Generic fallback
-            "Analyst",  # Generic fallback
-        ]
-        return alternatives
-    
-    def _try_alternative_search(self, keywords: str, location: str, limit: int) -> List[Dict]:
-        """Try an alternative search"""
-        try:
-            querystring = {
-                "limit": str(limit),
-                "offset": "0",
-                "title_filter": f'"{keywords}"',
-                "location_filter": f'"{location}"',
-                "description_type": "text"
-            }
-            
-            response = requests.get(
-                self.base_url,
-                headers=self.headers,
-                params=querystring,
-                timeout=20
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                if isinstance(data, list):
-                    return data
-                elif isinstance(data, dict):
-                    return data.get('data', data.get('jobs', data.get('results', [])))
-            
-            return []
-        
-        except Exception:
-            return []
-    
-    def _extract_skills_from_description(self, description: str) -> List[str]:
-        """Extract common skills from job description text"""
-        if not description:
-            return []
-        
-        # Common skills to look for
-        common_skills = [
-            'Python', 'Java', 'JavaScript', 'SQL', 'R', 'C++', 'C#', 'Go', 'Ruby', 'PHP',
-            'React', 'Angular', 'Vue', 'Node.js', 'Django', 'Flask', 'Spring', 'TensorFlow', 'PyTorch',
-            'AWS', 'Azure', 'GCP', 'Docker', 'Kubernetes', 'CI/CD', 'Git', 'Linux',
-            'Machine Learning', 'Deep Learning', 'Data Analysis', 'Data Science', 'AI',
-            'Tableau', 'Power BI', 'Excel', 'Salesforce', 'SAP',
-            'Agile', 'Scrum', 'Project Management', 'Leadership', 'Communication',
-            'PostgreSQL', 'MySQL', 'MongoDB', 'Redis', 'Elasticsearch',
-            'REST API', 'GraphQL', 'Microservices', 'DevOps',
-            'Financial Analysis', 'Risk Management', 'Compliance', 'Accounting',
-            'Marketing', 'SEO', 'Digital Marketing', 'Content Management',
-            'English', 'Mandarin', 'Cantonese', 'Japanese', 'Korean'
-        ]
-        
-        description_lower = description.lower()
-        found_skills = []
-        
-        for skill in common_skills:
-            if skill.lower() in description_lower:
-                found_skills.append(skill)
-        
-        return found_skills[:15]  # Limit to 15 skills
-    
-    def _normalize_jobs(self, jobs: List[Dict]) -> List[Dict]:
-        """Normalize job structure"""
-        normalized_jobs = []
-        
-        for job in jobs:
-            try:
-                # Handle location
-                location = "Remote"
-                if job.get('locations_derived') and len(job['locations_derived']) > 0:
-                    location = job['locations_derived'][0]
-                elif job.get('locations_raw'):
-                    try:
-                        loc_raw = job['locations_raw'][0]
-                        if isinstance(loc_raw, dict) and 'address' in loc_raw:
-                            addr = loc_raw['address']
-                            city = addr.get('addressLocality', '')
-                            region = addr.get('addressRegion', '')
-                            if city and region:
-                                location = f"{city}, {region}"
-                    except (KeyError, TypeError, IndexError):
-                        pass
-                
-                # Extract skills from description or use empty list
-                description = job.get('description_text', '')
-                skills = self._extract_skills_from_description(description)
-                
-                normalized_job = {
-                    'id': job.get('id', f"job_{len(normalized_jobs)}"),
-                    'title': job.get('title', 'Unknown Title'),
-                    'company': job.get('organization', 'Unknown Company'),
-                    'location': location,
-                    'description': description,
-                    'url': job.get('url', ''),
-                    'posted_date': job.get('date_posted', 'Unknown'),
-                    'salary': job.get('salary', 'Not specified'),
-                    'job_type': job.get('employment_type', 'Full-time'),
-                    'skills': skills,
-                    'benefits': [],
-                    'company_rating': 0,
-                    'is_remote': 'remote' in location.lower() if location else False
-                }
-                
-                normalized_jobs.append(normalized_job)
-                
-            except Exception as e:
-                continue
-        
-        return normalized_jobs
-
-
-# ============================================================================
 # CACHED MODEL LOADING - Prevents re-downloading on every page load
 # ============================================================================
 
@@ -1948,32 +1693,20 @@ class JobSeekerBackend:
     
     @property
     def job_searcher(self):
-        """Lazy initialization of job searcher - only tests connection when first used"""
+        """Lazy initialization of job searcher using IndeedScraperAPI"""
         if self._job_searcher is None:
-            print("\n🧪 Initializing RapidAPI job searcher...")
+            print("\n🧪 Initializing Indeed job scraper...")
             
             # Check if RAPIDAPI_KEY is configured
             if not Config.RAPIDAPI_KEY:
                 print("⚠️ WARNING: RAPIDAPI_KEY is not configured!")
                 print("   Job search functionality will not work.")
                 print("   Please configure RAPIDAPI_KEY in your Streamlit secrets.")
-                # Return a placeholder that will fail gracefully
-                self._job_searcher = LinkedInJobSearcher("")  # Empty key - will fail API calls
-                return self._job_searcher
+                return None
             
-            self._job_searcher = LinkedInJobSearcher(Config.RAPIDAPI_KEY)
-            # Test API connection only once
-            is_working, message = self._job_searcher.test_api_connection()
-            if is_working:
-                print(f"✅ {message}")
-            else:
-                print(f"⚠️ WARNING: {message}")
-                print("   Job search may not work properly!")
+            self._job_searcher = IndeedScraperAPI(Config.RAPIDAPI_KEY)
+            print("✅ Indeed job scraper initialized!")
         return self._job_searcher
-    
-    def test_api_connection(self):
-        """Test API connection on demand (not at startup)"""
-        return self.job_searcher.test_api_connection()
     
     def process_resume(self, file_obj, filename: str) -> Tuple[Dict, Dict]:
         """Process resume and get AI analysis"""
@@ -2022,11 +1755,15 @@ class JobSeekerBackend:
         print(f"📍 Location: {location}")
         print(f"{'='*60}\n")
         
-        # Search jobs
+        # Search jobs using IndeedScraperAPI
+        if self.job_searcher is None:
+            print("❌ Job searcher not initialized")
+            return []
+        
         jobs = self.job_searcher.search_jobs(
-            keywords=search_query,
+            query=search_query,
             location=location,
-            limit=num_jobs
+            max_rows=num_jobs
         )
         
         if not jobs or len(jobs) == 0:
