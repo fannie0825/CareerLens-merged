@@ -100,10 +100,10 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
     job_seeker_data = None
     try:
         if job_seeker_id:
-            job_seeker_data = db.get_job_seeker_by_id(job_seeker_id)
+            job_seeker_data = db.get_profile(job_seeker_id)
         else:
             # If no ID provided, try to get latest record
-            job_seeker_data = db.get_latest_job_seeker_data()
+            job_seeker_data = db.get_latest_job_seeker_id()
             
     except Exception as e:
         st.error(f"Error getting job seeker data: {e}")
