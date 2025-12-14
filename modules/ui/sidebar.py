@@ -3,14 +3,12 @@ import streamlit as st
 import time
 from modules.resume_upload import extract_text_from_resume, extract_profile_from_resume
 from modules.semantic_search import generate_and_store_resume_embedding
-from .dashboard import display_skill_matching_matrix
 
 
 def render_sidebar():
-    """Render CareerLens sidebar with resume upload and search criteria settings.
+    """Render sidebar with resume upload functionality.
     
-    Note: Search functionality is now handled only in the dashboard (display_refine_results_section).
-    The sidebar is simplified to only handle profile upload and filter settings.
+    Simplified sidebar - only handles resume upload and profile extraction.
     """
     with st.sidebar:
         st.markdown("""
@@ -53,11 +51,11 @@ def render_sidebar():
         """, unsafe_allow_html=True)
         
         st.markdown("---")
-        st.markdown("### 1. Upload your CV to begin")
+        st.markdown("### 📄 Upload your CV")
         uploaded_file = st.file_uploader(
             "Upload your resume",
             type=['pdf', 'docx'],
-            help="We parse your skills and experience to benchmark you against the market.",
+            help="We parse your skills and experience to match you with relevant jobs.",
             key="careerlens_resume_upload",
             label_visibility="collapsed"
         )
@@ -111,33 +109,3 @@ def render_sidebar():
             else:
                 if st.session_state.user_profile.get('name'):
                     st.success(f"✅ Using profile for: {st.session_state.user_profile.get('name', 'Unknown')}")
-        
-        st.markdown("---")
-        st.markdown("### 2. Set Search Criteria")
-        
-        target_domains = st.multiselect(
-            "Target Domains",
-            options=["FinTech", "ESG & Sustainability", "Data Analytics", "Digital Transformation", 
-                    "Investment Banking", "Consulting", "Technology", "Healthcare", "Education"],
-            default=st.session_state.get('target_domains', []),
-            help="Select industries/domains to search for jobs",
-            key="sidebar_target_domains"
-        )
-        st.session_state.target_domains = target_domains
-        
-        salary_expectation = st.slider(
-            "Min. Monthly Salary (HKD)",
-            min_value=0,
-            max_value=150000,
-            value=st.session_state.get('salary_expectation', 0),
-            step=5000,
-            help="Set to 0 to disable salary filtering",
-            key="sidebar_salary"
-        )
-        st.session_state.salary_expectation = salary_expectation
-        
-        st.markdown("---")
-        st.info("💡 Click **Refine Results** in the dashboard to search for jobs with your criteria.")
-        
-        # Display skill matching explanation
-        display_skill_matching_matrix(st.session_state.user_profile)
