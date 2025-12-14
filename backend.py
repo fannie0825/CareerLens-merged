@@ -154,20 +154,6 @@ def get_pinecone_client():
         print("✅ Pinecone client cached!")
     return _cached_pinecone
 
-# Cache LinkedInJobSearcher
-_cached_linkedin_searcher = None
-
-def get_linkedin_job_searcher():
-    """Get cached LinkedInJobSearcher - only initializes once"""
-    global _cached_linkedin_searcher
-    if _cached_linkedin_searcher is None:
-        print("📦 Initializing LinkedIn Job Searcher (first time only)...")
-        # Import here to avoid circular dependency, searcher defined later in file
-        _cached_linkedin_searcher = LinkedInJobSearcher(Config.RAPIDAPI_KEY)
-        print("✅ LinkedIn Job Searcher cached!")
-    return _cached_linkedin_searcher
-
-
 # ============================================================================
 # CAREERLENS UTILITY CLASSES AND FUNCTIONS
 # ============================================================================
