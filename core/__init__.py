@@ -28,6 +28,18 @@ from .interview import (
     # NOTE: ai_interview_page is UI, not business logic
     # UI is in modules/ui/pages/ai_interview_page.py
 )
+from .salary_analyzer import (
+    SalaryAnalyzer,
+    extract_salary_from_text,
+    extract_salary_from_text_regex,
+    filter_jobs_by_salary,
+    calculate_salary_band
+)
+from .domain_filter import (
+    DomainFilter,
+    filter_jobs_by_domains,
+    DOMAIN_KEYWORDS
+)
 
 __all__ = [
     # Job Processing
@@ -56,4 +68,16 @@ __all__ = [
     'generate_interview_question',
     'evaluate_answer',
     'generate_final_summary',
+    
+    # Salary Analysis
+    'SalaryAnalyzer',
+    'extract_salary_from_text',
+    'extract_salary_from_text_regex',
+    'filter_jobs_by_salary',
+    'calculate_salary_band',
+    
+    # Domain Filtering
+    'DomainFilter',
+    'filter_jobs_by_domains',
+    'DOMAIN_KEYWORDS',
 ]
