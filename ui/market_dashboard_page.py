@@ -16,8 +16,8 @@ def market_dashboard_page():
     # Check if modules are available
     try:
         from modules.utils import _cleanup_session_state, validate_secrets
-        from modules.ui.styles import render_styles
-        from modules.ui import (
+        from ui.components.styles import render_styles
+        from ui.components import (
             render_sidebar as modular_render_sidebar,
             render_hero_banner,
             display_resume_generator as modular_display_resume_generator,
