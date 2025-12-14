@@ -1,147 +1,32 @@
-"""
-Configuration for Job Matcher
-Reads sensitive values from Streamlit secrets (.streamlit/secrets.toml)
-"""
+# config.py
 import os
-import streamlit as st
+from pathlib import Path
 
-
-class _ConfigMeta(type):
-    """Metaclass to allow class-level property access for backward compatibility.
+class Config:
+    # Project root
+    PROJECT_ROOT = Path(__file__).parent.absolute()
     
-    This allows code like `Config.AZURE_ENDPOINT` to dynamically read from secrets,
-    rather than returning a static value.
-    """
+    # Database paths
+    DB_PATH_JOB_SEEKER = os.getenv(
+        'DB_PATH_JOB_SEEKER',
+        str(PROJECT_ROOT / 'job_seeker.db')
+    )
+    DB_PATH_HEAD_HUNTER = os.getenv(
+        'DB_PATH_HEAD_HUNTER',
+        str(PROJECT_ROOT / 'head_hunter_jobs.db')
+    )
+    DB_PATH_CHROMA = os.getenv(
+        'DB_PATH_CHROMA',
+        str(PROJECT_ROOT / '.chroma_db')
+    )
     
-    @property
-    def PINECONE_API_KEY(cls):
-        return cls.get_pinecone_api_key()
+    # API Keys
+    AZURE_OPENAI_API_KEY = os.getenv('AZURE_OPENAI_API_KEY')
+    AZURE_OPENAI_ENDPOINT = os.getenv('AZURE_OPENAI_ENDPOINT')
+    AZURE_OPENAI_API_VERSION = os.getenv('AZURE_OPENAI_API_VERSION', '2024-02-15-preview')
+    AZURE_OPENAI_DEPLOYMENT = os.getenv('AZURE_OPENAI_DEPLOYMENT')
+    AZURE_OPENAI_EMBEDDING_DEPLOYMENT = os.getenv('AZURE_OPENAI_EMBEDDING_DEPLOYMENT')
     
-    @property
-    def AZURE_ENDPOINT(cls):
-        return cls.get_azure_endpoint()
-    
-    @property
-    def AZURE_API_KEY(cls):
-        return cls.get_azure_api_key()
-    
-    @property
-    def RAPIDAPI_KEY(cls):
-        return cls.get_rapidapi_key()
-
-
-class Config(metaclass=_ConfigMeta):
-    """Configuration settings - reads sensitive values from Streamlit secrets.
-    
-    API keys and endpoints are read from .streamlit/secrets.toml (local)
-    or Streamlit Cloud secrets (production).
-    
-    Usage:
-        Config.AZURE_ENDPOINT  # Returns endpoint from secrets
-        Config.AZURE_API_KEY   # Returns API key from secrets
-    """
-    
-    # Pinecone (non-sensitive settings)
-    PINECONE_ENVIRONMENT = "us-east-1"
-    INDEX_NAME = "job-resume-matcher"
-    EMBEDDING_DIMENSION = 384
-    MODEL_NAME = "all-MiniLM-L6-v2"
-    
-    # Azure OpenAI (non-sensitive settings)
-    AZURE_API_VERSION = "2024-10-21"
-    AZURE_MODEL = "gpt-4o-mini"
-    
-    # Application Settings
-    MAX_JOBS_TO_FETCH = 50
-    TOP_MATCHES_TO_SHOW = 5
-    UPLOAD_FOLDER = "uploads"
-    
-    @staticmethod
-    def get_pinecone_api_key():
-        """Get Pinecone API key from Streamlit secrets."""
-        try:
-            return st.secrets.get("PINECONE_API_KEY", "")
-        except (KeyError, AttributeError):
-            return ""
-    
-    @staticmethod
-    def get_azure_endpoint():
-        """Get Azure OpenAI endpoint from secrets.
-        
-        Users should set: AZURE_OPENAI_ENDPOINT = "https://hkust.azure-api.net/openai"
-        This method automatically strips the /openai suffix because the SDK adds it internally.
-        """
-        try:
-            endpoint = st.secrets.get("AZURE_OPENAI_ENDPOINT", "")
-        except (KeyError, AttributeError):
-            return ""
-        # Strip /openai suffix if present (SDK adds it automatically)
-        if endpoint.endswith('/openai'):
-            endpoint = endpoint[:-7]
-        return endpoint.rstrip('/')
-    
-    @staticmethod
-    def get_azure_api_key():
-        """Get Azure OpenAI API key from Streamlit secrets."""
-        try:
-            return st.secrets.get("AZURE_OPENAI_API_KEY", "")
-        except (KeyError, AttributeError):
-            return ""
-    
-    @staticmethod
-    def get_rapidapi_key():
-        """Get RapidAPI key from Streamlit secrets."""
-        try:
-            return st.secrets.get("RAPIDAPI_KEY", "")
-        except (KeyError, AttributeError):
-            return ""
-    
-    @classmethod
-    def setup(cls):
-        """Create necessary directories."""
-        os.makedirs(cls.UPLOAD_FOLDER, exist_ok=True)
-    
-    @classmethod
-    def validate(cls):
-        """Validate that required API keys are set in secrets."""
-        missing = []
-        if not cls.get_azure_api_key():
-            missing.append("AZURE_OPENAI_API_KEY")
-        if not cls.get_azure_endpoint():
-            missing.append("AZURE_OPENAI_ENDPOINT")
-        if not cls.get_rapidapi_key():
-            missing.append("RAPIDAPI_KEY")
-        
-        if missing:
-            print(f"⚠️ Missing secrets: {', '.join(missing)}")
-            print()
-            print(f"💡 Please configure these secrets:")
-            print(f"   1. In Streamlit Cloud: Go to App Settings → Secrets")
-            print(f"   2. Locally: Create .streamlit/secrets.toml file")
-            print(f"   3. Add these keys:")
-            for secret in missing:
-                print(f"      {secret} = \"your-key-here\"")
-            print()
-            return False
-        
-        print("✅ Configuration validated")
-        return True
-    
-    @staticmethod
-    def check_azure_credentials():
-        """Check if Azure OpenAI credentials are configured.
-        
-        Returns:
-            tuple: (is_configured: bool, error_message: str or None)
-        """
-        missing = []
-        if not Config.get_azure_api_key():
-            missing.append("AZURE_OPENAI_API_KEY")
-        if not Config.get_azure_endpoint():
-            missing.append("AZURE_OPENAI_ENDPOINT")
-        
-        if missing:
-            error_msg = f"Missing required secrets: {', '.join(missing)}. Please configure these in your Streamlit secrets."
-            return False, error_msg
-        
-        return True, None
+    RAPIDAPI_KEY = os.getenv('RAPIDAPI_KEY')
+    PINECONE_API_KEY = os.getenv('PINECONE_API_KEY')
+    PINECONE_ENVIRONMENT = os.getenv('PINECONE_ENVIRONMENT')
