@@ -340,7 +340,21 @@ Be thorough and creative!"""
                 response_format={"type": "json_object"}
             )
             
-            ai_analysis = json.loads(response.choices[0].message.content)
+            content = response.choices[0].message.content
+            
+            # Helper function to clean markdown
+            def clean_json_markdown(text):
+                text = text.strip()
+                if text.startswith("```"):
+                    lines = text.split('\n')
+                    if lines[0].startswith("```"):
+                        lines = lines[1:]
+                    if lines[-1].startswith("```"):
+                        lines = lines[:-1]
+                    text = '\n'.join(lines)
+                return text
+
+            ai_analysis = json.loads(clean_json_markdown(content))
             print(f"✅ GPT-4 analysis complete! Found {len(ai_analysis.get('skills', []))} skills")
             
             # Validate that we got meaningful data
