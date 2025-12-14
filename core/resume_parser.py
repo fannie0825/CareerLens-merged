@@ -331,6 +331,15 @@ Be thorough and creative!"""
         except Exception as e:
             error_msg = str(e)
             print(f"❌ GPT-4 Error: {error_msg}")
+            
+            # Check for common 404 Resource Not Found (Deployment issue)
+            if "Resource not found" in error_msg and "404" in error_msg:
+                error_msg = (
+                    f"Azure OpenAI Deployment '{self.model}' not found. "
+                    "Please check that your AZURE_OPENAI_DEPLOYMENT in secrets.toml matches "
+                    "the deployment name in your Azure OpenAI resource."
+                )
+            
             fallback = self._fallback_analysis()
             fallback['_error'] = error_msg
             fallback['_analysis_failed'] = True

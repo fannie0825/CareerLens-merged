@@ -166,6 +166,19 @@ def main_analyzer_page():
                                 "   - RapidAPI: https://rapidapi.com/\n\n"
                                 "After adding secrets, refresh the page."
                             )
+                        elif "Azure OpenAI Deployment" in error_msg:
+                            st.info(
+                                "💡 **How to fix this:**\n\n"
+                                "The deployment name in your configuration does not match your Azure OpenAI resource.\n\n"
+                                "1. **Check Azure Portal:**\n"
+                                "   - Go to your Azure OpenAI resource\n"
+                                "   - Click on **Model deployments**\n"
+                                "   - Copy the exact **Deployment name** (e.g., 'gpt-4')\n\n"
+                                "2. **Update Configuration:**\n"
+                                "   - Update `AZURE_OPENAI_DEPLOYMENT` in `.streamlit/secrets.toml`\n"
+                                "   - Or update the environment variable `AZURE_OPENAI_DEPLOYMENT`\n\n"
+                                f"Current configured deployment: **{backend.gpt4_detector.model if hasattr(backend, 'gpt4_detector') else 'gpt-4o-mini'}**"
+                            )
                         
                         st.warning(
                             "⚠️ Please fill in your career details manually in the form below."
