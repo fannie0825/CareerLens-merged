@@ -98,8 +98,21 @@ class ResumeParser:
             # Reset file position to beginning
             docx_file.seek(0)
             doc = Document(docx_file)
-            text = "\n".join([paragraph.text for paragraph in doc.paragraphs])
-            return text
+            
+            full_text = []
+            
+            # Extract text from paragraphs
+            for paragraph in doc.paragraphs:
+                full_text.append(paragraph.text)
+                
+            # Extract text from tables
+            for table in doc.tables:
+                for row in table.rows:
+                    for cell in row.cells:
+                        for paragraph in cell.paragraphs:
+                            full_text.append(paragraph.text)
+            
+            return "\n".join(full_text)
         except Exception as e:
             raise Exception(f"Error reading DOCX: {str(e)}")
     
@@ -160,7 +173,7 @@ class ResumeParser:
         try:
             text = self.extract_text(file_obj, filename)
             
-            if not text or len(text.strip()) < 50:
+            if not text or len(text.strip()) < 20:
                 file_type = filename.split('.')[-1].upper() if '.' in filename else 'file'
                 raise ValueError(
                     f"Could not extract sufficient text from resume. "
@@ -775,7 +788,7 @@ def extract_text_from_resume(uploaded_file) -> Optional[str]:
                     text += extracted + "\n"
             
             # Check if we got any text
-            if not text or len(text.strip()) < 50:
+            if not text or len(text.strip()) < 20:
                 st.warning(
                     "⚠️ Could not extract text from PDF. This may happen if:\n"
                     "• The PDF is scanned/image-based\n"
@@ -789,10 +802,24 @@ def extract_text_from_resume(uploaded_file) -> Optional[str]:
             Document = _get_docx_document()
             uploaded_file.seek(0)
             doc = Document(uploaded_file)
-            text = "\n".join([paragraph.text for paragraph in doc.paragraphs])
+            
+            full_text = []
+            
+            # Extract text from paragraphs
+            for paragraph in doc.paragraphs:
+                full_text.append(paragraph.text)
+                
+            # Extract text from tables
+            for table in doc.tables:
+                for row in table.rows:
+                    for cell in row.cells:
+                        for paragraph in cell.paragraphs:
+                            full_text.append(paragraph.text)
+            
+            text = "\n".join(full_text)
             
             # Check if we got any text
-            if not text or len(text.strip()) < 50:
+            if not text or len(text.strip()) < 20:
                 st.warning(
                     "⚠️ Could not extract sufficient text from DOCX. "
                     "The document may be mostly empty or use non-standard formatting."
