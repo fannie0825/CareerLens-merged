@@ -17,7 +17,11 @@ from .resume_parser import (
     GPT4JobRoleDetector,
     extract_relevant_resume_sections,
     extract_structured_profile,
-    generate_tailored_resume
+    generate_tailored_resume,
+    # Streamlit-integrated functions (from modules/resume_upload)
+    extract_text_from_resume,
+    extract_profile_from_resume,
+    verify_profile_data_pass2
 )
 from .rate_limiting import TokenUsageTracker, RateLimiter
 from .interview import (
@@ -70,6 +74,9 @@ __all__ = [
     'extract_relevant_resume_sections',
     'extract_structured_profile',
     'generate_tailored_resume',
+    'extract_text_from_resume',
+    'extract_profile_from_resume',
+    'verify_profile_data_pass2',
     
     # Rate Limiting
     'TokenUsageTracker',

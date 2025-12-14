@@ -1,7 +1,7 @@
 """User profile display and editing"""
 import streamlit as st
 import time
-from modules.resume_upload import extract_text_from_resume, extract_profile_from_resume
+from core.resume_parser import extract_text_from_resume, extract_profile_from_resume
 from core.semantic_search import generate_and_store_resume_embedding
 
 
