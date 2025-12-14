@@ -77,6 +77,9 @@ import openai
 from openai import AzureOpenAI
 from config import Config
 
+# Import canonical implementations from core - single source of truth
+from core.rate_limiting import TokenUsageTracker, RateLimiter
+
 # Lazy imports for data processing
 _pd = None
 _np = None
@@ -172,77 +175,8 @@ def get_linkedin_job_searcher():
 # CAREERLENS UTILITY CLASSES AND FUNCTIONS
 # ============================================================================
 
-class TokenUsageTracker:
-    """Tracks token usage and costs for API calls (from CareerLens)"""
-    def __init__(self):
-        self.total_tokens = 0
-        self.total_prompt_tokens = 0
-        self.total_completion_tokens = 0
-        self.total_embedding_tokens = 0
-        self.cost_usd = 0.0
-        self.embedding_cost_per_1k = 0.00002
-        self.gpt4_mini_prompt_cost_per_1k = 0.00015
-        self.gpt4_mini_completion_cost_per_1k = 0.0006
-    
-    def add_embedding_tokens(self, tokens):
-        """Track embedding token usage"""
-        self.total_embedding_tokens += tokens
-        self.total_tokens += tokens
-        self.cost_usd += (tokens / 1000) * self.embedding_cost_per_1k
-    
-    def add_completion_tokens(self, prompt_tokens, completion_tokens):
-        """Track completion token usage"""
-        self.total_prompt_tokens += prompt_tokens
-        self.total_completion_tokens += completion_tokens
-        self.total_tokens += prompt_tokens + completion_tokens
-        self.cost_usd += (prompt_tokens / 1000) * self.gpt4_mini_prompt_cost_per_1k
-        self.cost_usd += (completion_tokens / 1000) * self.gpt4_mini_completion_cost_per_1k
-    
-    def get_summary(self):
-        """Get usage summary"""
-        return {
-            'total_tokens': self.total_tokens,
-            'embedding_tokens': self.total_embedding_tokens,
-            'prompt_tokens': self.total_prompt_tokens,
-            'completion_tokens': self.total_completion_tokens,
-            'estimated_cost_usd': round(self.cost_usd, 4)
-        }
-    
-    def reset(self):
-        """Reset counters"""
-        self.total_tokens = 0
-        self.total_prompt_tokens = 0
-        self.total_completion_tokens = 0
-        self.total_embedding_tokens = 0
-        self.cost_usd = 0.0
-
-
-class RateLimiter:
-    """Simple rate limiter for API calls (from CareerLens)"""
-    def __init__(self, max_requests_per_minute=10):
-        self.max_requests_per_minute = max_requests_per_minute
-        self.request_times = []
-    
-    def wait_if_needed(self):
-        """Wait if rate limit exceeded"""
-        if self.max_requests_per_minute <= 0:
-            return
-        
-        now = time.time()
-        one_minute_ago = now - 60
-        self.request_times = [t for t in self.request_times if t > one_minute_ago]
-        
-        if len(self.request_times) >= self.max_requests_per_minute:
-            oldest_request = min(self.request_times)
-            wait_time = 60 - (now - oldest_request) + 1
-            if wait_time > 0:
-                print(f"⏳ Rate limiting: waiting {wait_time:.1f}s...")
-                time.sleep(wait_time)
-                now = time.time()
-                one_minute_ago = now - 60
-                self.request_times = [t for t in self.request_times if t > one_minute_ago]
-        
-        self.request_times.append(time.time())
+# Note: TokenUsageTracker and RateLimiter are now imported from core.rate_limiting
+# This ensures a single source of truth for these classes across the codebase.
 
 
 def api_call_with_retry(request_func, max_retries=3, initial_delay=1):
