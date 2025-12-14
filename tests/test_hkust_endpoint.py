@@ -182,7 +182,60 @@ def test_endpoint(api_key):
     return None, None
 
 
-def print_recommendations(working_deployment, working_version):
+def test_embedding_endpoint(api_key):
+    """Test embedding deployments against the HKUST endpoint."""
+    
+    print("\n" + "=" * 60)
+    print(" 🔢 Testing EMBEDDING Deployments")
+    print("=" * 60)
+    
+    # Embedding deployment names to try
+    embedding_deployments = [
+        "text-embedding-3-small",
+        "text-embedding-3-large", 
+        "text-embedding-ada-002",
+        "embedding",
+        "embeddings",
+        "hkust-embedding",
+        "ada",
+    ]
+    
+    test_endpoint = ENDPOINT.rstrip('/')
+    if test_endpoint.endswith('/openai'):
+        test_endpoint = test_endpoint[:-7]
+    
+    headers = {
+        "api-key": api_key,
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "input": "test",
+        "model": ""  # Will be set per deployment
+    }
+    
+    for deployment in embedding_deployments:
+        url = f"{test_endpoint}/openai/deployments/{deployment}/embeddings?api-version=2024-02-01"
+        payload["model"] = deployment
+        
+        try:
+            response = requests.post(url, headers=headers, json=payload, timeout=10)
+            status = response.status_code
+            
+            if status == 200:
+                print(f"   ✅ SUCCESS! Embedding deployment: {deployment}")
+                return deployment
+            elif status == 404:
+                print(f"   ❌ 404 - {deployment}")
+            else:
+                print(f"   ⚠️ {status} - {deployment}")
+        except Exception as e:
+            print(f"   ❌ Error - {deployment}: {e}")
+    
+    return None
+
+
+def print_recommendations(working_deployment, working_version, working_embedding=None):
     """Print configuration recommendations."""
     
     print("\n" + "=" * 60)
@@ -190,6 +243,8 @@ def print_recommendations(working_deployment, working_version):
     print("=" * 60)
     
     if working_deployment and working_version:
+        embedding_line = f'AZURE_OPENAI_EMBEDDING_DEPLOYMENT = "{working_embedding}"' if working_embedding else '# AZURE_OPENAI_EMBEDDING_DEPLOYMENT = "your-embedding-deployment"  # Need to find this!'
+        
         print(f"""
 ✅ Working configuration found!
 
@@ -199,12 +254,19 @@ Update your .streamlit/secrets.toml:
 AZURE_OPENAI_ENDPOINT = "https://hkust.azure-api.net/openai"
 AZURE_OPENAI_API_KEY = "your-api-key"
 AZURE_OPENAI_DEPLOYMENT = "{working_deployment}"
+{embedding_line}
 AZURE_OPENAI_API_VERSION = "{working_version}"
 ```
 """)
+        if not working_embedding:
+            print("""
+⚠️ Note: Could not find a working embedding deployment.
+   You will need to ask HKUST IT for the correct embedding deployment name.
+   Common names: "text-embedding-3-small", "text-embedding-ada-002", "embedding"
+""")
     else:
         print("""
-❌ Could not find a working deployment.
+❌ Could not find a working chat deployment.
 
 This could mean:
 1. The deployment names tested don't match what's available
@@ -212,14 +274,14 @@ This could mean:
 3. The APIM gateway has a different URL pattern
 
 📞 Contact HKUST IT to get:
-   - The exact deployment name(s) available
+   - The exact deployment name(s) available for CHAT (e.g., gpt-4, gpt-4o-mini)
+   - The exact deployment name(s) available for EMBEDDINGS (e.g., text-embedding-3-small)
    - The correct URL pattern for the APIM gateway
    - Confirmation that your API key has proper permissions
 
 Common HKUST deployment names might be:
-   - "gpt-4" or "gpt4"
-   - "gpt-35-turbo" or "gpt35turbo"
-   - A custom name like "hkust-gpt4"
+   Chat: "gpt-4", "gpt4", "gpt-35-turbo", "hkust-gpt4"
+   Embedding: "text-embedding-3-small", "embedding", "ada"
 """)
 
 
