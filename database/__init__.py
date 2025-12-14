@@ -1,14 +1,35 @@
 """
 Database package for CareerLens.
+
+Database Structure:
+    database/
+    ├── job_seeker_db.py      # JobSeekerDB - job_seeker.db
+    ├── head_hunter_db.py     # HeadhunterDB - head_hunter_jobs.db  
+    ├── job_post_api_db.py    # MatchedJobsDB - job_post_API.db (NEW)
+    ├── models.py             # Shared definitions & re-exports
+    └── queries.py            # Query functions
+
+Data Flow:
+    Step 1: Resume Upload → job_seeker.db
+    Step 2: Job Match → job_post_API.db  
+    Step 3: Resume/Interview → Read from both DBs
 """
+# Import from individual database modules
+from database.job_seeker_db import (
+    JobSeekerDB,
+    DB_PATH_JOB_SEEKER,
+)
+from database.head_hunter_db import (
+    HeadhunterDB,
+    DB_PATH_HEAD_HUNTER,
+)
+from database.job_post_api_db import (
+    MatchedJobsDB,
+    DB_PATH_JOB_POST_API,
+)
+# Import shared base class from models
 from database.models import (
     DatabaseConnection,
-    JobSeekerDB,
-    HeadhunterDB,
-    MatchedJobsDB,
-    DB_PATH_JOB_SEEKER,
-    DB_PATH_HEAD_HUNTER,
-    DB_PATH_JOB_POST_API,
 )
 from database.queries import (
     get_job_seeker_db,
