@@ -26,6 +26,10 @@ from .interview import (
     generate_final_summary,
     ai_interview_page
 )
+from .job_processor import (
+    JobSeekerBackend,
+    JobMatcherBackend
+)
 
 __all__ = [
     # Rate limiting
@@ -48,4 +52,7 @@ __all__ = [
     'evaluate_answer',
     'generate_final_summary',
     'ai_interview_page',
+    # Job processing orchestrators
+    'JobSeekerBackend',
+    'JobMatcherBackend',
 ]

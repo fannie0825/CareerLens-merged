@@ -12,7 +12,8 @@ import streamlit as st
 
 def ai_interview_dashboard():
     """AI Interview Dashboard"""
-    from backend import get_jobs_for_interview, get_job_seeker_profile, ai_interview_page
+    from database.queries import get_jobs_for_interview, get_job_seeker_profile
+    from core.interview import ai_interview_page
     
     st.title("🤖 AI Mock Interview System")
 

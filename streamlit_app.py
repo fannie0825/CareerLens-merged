@@ -41,7 +41,7 @@ import sqlite3
 from typing import List, Dict
 
 # Import backend utilities
-from backend import TokenUsageTracker
+from core.rate_limiting import TokenUsageTracker
 
 # Import How It Works page
 from how_it_works import render_how_it_works_page

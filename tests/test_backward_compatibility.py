@@ -1,10 +1,12 @@
 # tests/test_backward_compatibility.py
+"""
+Test that module imports work from their canonical locations.
+"""
 
-def test_streamlit_imports_work():
-    """Ensure streamlit_app.py imports don't break"""
+def test_core_imports_work():
+    """Ensure core module imports work"""
     
-    # Old imports should still work (thanks to backend.py re-exports)
-    from backend import (
+    from core import (
         analyze_match_simple,
         JobSeekerBackend,
         JobMatcherBackend,
@@ -16,16 +18,58 @@ def test_streamlit_imports_work():
     assert JobSeekerBackend is not None
 
 
+def test_services_imports_work():
+    """Ensure services module imports work"""
+    
+    from services.linkedin_api import LinkedInJobSearcher
+    from services.azure_openai import (
+        generate_docx_from_json,
+        generate_pdf_from_json,
+        format_resume_as_text
+    )
+    
+    assert LinkedInJobSearcher is not None
+    assert generate_docx_from_json is not None
+
+
+def test_database_imports_work():
+    """Ensure database module imports work"""
+    
+    from database.queries import (
+        get_all_job_seekers,
+        get_job_seeker_profile,
+        save_job_seeker_info,
+        get_all_jobs_for_matching
+    )
+    
+    assert get_all_job_seekers is not None
+    assert save_job_seeker_info is not None
+
+
+def test_analysis_imports_work():
+    """Ensure analysis module imports work"""
+    
+    from modules.analysis.match_analysis import (
+        filter_jobs_by_domains,
+        filter_jobs_by_salary,
+        calculate_salary_band
+    )
+    
+    assert filter_jobs_by_domains is not None
+    assert filter_jobs_by_salary is not None
+    assert calculate_salary_band is not None
+
+
 def test_imports_are_same_object():
-    """Verify re-exports point to same objects (not copies)"""
+    """Verify imports from different paths point to same objects"""
     
     from services.linkedin_api import LinkedInJobSearcher as DirectImport
-    from backend import LinkedInJobSearcher as ReExport
+    from services import LinkedInJobSearcher as PackageImport
     
     # Should be the SAME class object
-    assert DirectImport is ReExport
+    assert DirectImport is PackageImport
     
     from core.job_matcher import JobMatcher as DirectMatcher
-    from backend import JobMatcher as ReExportMatcher
+    from core import JobMatcher as PackageImport
     
-    assert DirectMatcher is ReExportMatcher
+    assert DirectMatcher is PackageImport

@@ -14,7 +14,7 @@ from typing import Dict, Any
 def main_analyzer_page():
     """Main Page - CareerLens Job Seeker Dashboard"""
     # Import dependencies inside function to avoid circular imports
-    from backend import JobSeekerBackend
+    from core.job_processor import JobSeekerBackend
     from database import save_job_seeker_info
     
     # Import WebSocket utilities with fallback

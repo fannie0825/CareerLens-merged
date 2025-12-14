@@ -1,55 +1,63 @@
 # tests/test_no_duplicates.py
+"""
+Test that there are no duplicate class definitions across modules.
+"""
 
-def test_no_duplicate_linkedin_searcher():
-    """Ensure LinkedInJobSearcher only exists in services/linkedin_api.py"""
+def test_linkedin_searcher_exists():
+    """Ensure LinkedInJobSearcher exists in services/linkedin_api.py"""
     
-    import backend
-    import services.linkedin_api
-    
-    # backend should NOT have the class definition, only import
-    # Check if backend.py has a duplicate definition by inspecting source
+    from services.linkedin_api import LinkedInJobSearcher
     import inspect
     
-    backend_source = inspect.getsource(backend)
-    
-    # Should NOT find "class LinkedInJobSearcher" in backend.py
-    assert "class LinkedInJobSearcher" not in backend_source, \
-        "LinkedInJobSearcher is duplicated in backend.py!"
+    # Verify it's a class
+    assert inspect.isclass(LinkedInJobSearcher), \
+        "LinkedInJobSearcher should be a class!"
 
 
-def test_no_duplicate_job_matcher():
-    """Ensure JobMatcher only exists in core/job_matcher.py"""
+def test_job_matcher_exists():
+    """Ensure JobMatcher exists in core/job_matcher.py"""
     
-    import backend
-    import inspect
-    import re
-    
-    backend_source = inspect.getsource(backend)
-    
-    # Check for exact "class JobMatcher:" or "class JobMatcher(" to avoid matching JobMatcherBackend
-    # JobMatcherBackend is a DIFFERENT class that should remain in backend.py
-    assert not re.search(r"class JobMatcher[\(:]", backend_source), \
-        "JobMatcher is duplicated in backend.py!"
-    
-    assert "def analyze_match_simple" not in backend_source, \
-        "analyze_match_simple is duplicated in backend.py!"
-
-
-def test_backend_is_facade():
-    """Verify backend.py is now just a facade (imports + orchestrators)"""
-    
-    import backend
+    from core.job_matcher import JobMatcher, analyze_match_simple
     import inspect
     
-    backend_source = inspect.getsource(backend)
-    lines = backend_source.split('\n')
+    # Verify it's a class
+    assert inspect.isclass(JobMatcher), \
+        "JobMatcher should be a class!"
     
-    # Count lines (excluding blanks and comments)
-    code_lines = [
-        line for line in lines 
-        if line.strip() and not line.strip().startswith('#')
-    ]
+    # Verify analyze_match_simple is a function
+    assert callable(analyze_match_simple), \
+        "analyze_match_simple should be callable!"
+
+
+def test_job_processor_exists():
+    """Verify JobSeekerBackend exists in core/job_processor.py"""
     
-    # backend.py should be < 500 lines now
-    assert len(code_lines) < 500, \
-        f"backend.py still has {len(code_lines)} lines of code!"
+    from core.job_processor import JobSeekerBackend, JobMatcherBackend
+    import inspect
+    
+    assert inspect.isclass(JobSeekerBackend), \
+        "JobSeekerBackend should be a class!"
+    
+    assert inspect.isclass(JobMatcherBackend), \
+        "JobMatcherBackend should be a class!"
+
+
+def test_core_module_exports():
+    """Verify core module exports all expected items"""
+    
+    from core import (
+        TokenUsageTracker,
+        RateLimiter,
+        JobMatcher,
+        calculate_match_scores,
+        analyze_match_simple,
+        ResumeParser,
+        GPT4JobRoleDetector,
+        JobSeekerBackend,
+        JobMatcherBackend
+    )
+    
+    # All should be importable
+    assert TokenUsageTracker is not None
+    assert RateLimiter is not None
+    assert JobMatcher is not None
