@@ -53,7 +53,7 @@ def _get_numpy():
 
 
 
-def create_enhanced_visualizations(matched_jobs):
+def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
     if not matched_jobs or len(matched_jobs) == 0:
         st.info("No matched jobs available for visualization.")
         return
