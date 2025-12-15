@@ -70,14 +70,14 @@ class Config:
     # Azure OpenAI Configuration
     AZURE_OPENAI_API_KEY = None
     AZURE_OPENAI_ENDPOINT = None
-    AZURE_OPENAI_API_VERSION = '2024-02-15-preview'
+    AZURE_OPENAI_API_VERSION = '2024-10-21'
     AZURE_OPENAI_DEPLOYMENT = None
     AZURE_OPENAI_EMBEDDING_DEPLOYMENT = None
     
     # Aliases for backward compatibility
     AZURE_API_KEY = None
     AZURE_ENDPOINT = None
-    AZURE_API_VERSION = '2024-02-15-preview'
+    AZURE_API_VERSION = '2024-10-21'
     AZURE_MODEL = 'gpt-4o-mini'
     
     # RapidAPI Configuration
@@ -106,7 +106,7 @@ class Config:
         # Azure OpenAI - Try flat secrets/env vars first
         cls.AZURE_OPENAI_API_KEY = _get_secret('AZURE_OPENAI_API_KEY')
         cls.AZURE_OPENAI_ENDPOINT = _get_secret('AZURE_OPENAI_ENDPOINT')
-        cls.AZURE_OPENAI_API_VERSION = _get_secret('AZURE_OPENAI_API_VERSION', '2024-02-15-preview')
+        cls.AZURE_OPENAI_API_VERSION = _get_secret('AZURE_OPENAI_API_VERSION', '2024-10-21')
         cls.AZURE_OPENAI_DEPLOYMENT = _get_secret('AZURE_OPENAI_DEPLOYMENT', 'gpt-4o-mini')
         cls.AZURE_OPENAI_EMBEDDING_DEPLOYMENT = _get_secret('AZURE_OPENAI_EMBEDDING_DEPLOYMENT', 'text-embedding-3-small')
         
