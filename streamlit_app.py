@@ -346,7 +346,7 @@ st.sidebar.markdown("""
 st.sidebar.markdown("---")
 
 # Job Seeker Section
-st.sidebar.markdown('<div class="nav-section-header">👤 Job Seeker</div>', unsafe_allow_html=True)
+st.sidebar.markdown('<div class="nav-section-header" style="color: black;">👤 Job Seeker</div>', unsafe_allow_html=True)
 if st.sidebar.button("🏠 Job Seeker", use_container_width=True, key="main_btn"):
     st.session_state.current_page = "main"
 if st.sidebar.button("💼 Job Matching", use_container_width=True, key="job_matching_btn"):
@@ -363,7 +363,7 @@ if st.sidebar.button("🧠 How This App Works", use_container_width=True, key="h
 st.sidebar.markdown("---")
 
 # Recruiter Section
-st.sidebar.markdown('<div class="nav-section-header">🎯 Recruiter</div>', unsafe_allow_html=True)
+st.sidebar.markdown('<div class="nav-section-header" style="color: black;">🎯 Recruiter</div>', unsafe_allow_html=True)
 if st.sidebar.button("📋 Job Posting", use_container_width=True, key="job_posting_btn"):
     st.session_state.current_page = "head_hunter"
 if st.sidebar.button("🔍 Recruitment Match", use_container_width=True, key="recruitment_match_btn"):
