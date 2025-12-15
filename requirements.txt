@@ -30,7 +30,7 @@ pinecone-client>=3.0.0,<4.0.0   # Pinecone vector database
 sentence-transformers>=2.2.0,<3.0.0  # Embedding model (all-MiniLM-L6-v2)
 
 # Optional: ChromaDB for local vector store (CareerLens)
-# chromadb>=0.4.0,<0.5.0
+chromadb>=0.4.0,<0.6.0
 
 # -----------------------------------------------------------------------------
 # AI/LLM APIs
