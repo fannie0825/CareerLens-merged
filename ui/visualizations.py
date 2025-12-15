@@ -8,7 +8,6 @@ skill distributions, and comparative charts.
 import streamlit as st
 from collections import Counter
 import datetime
-from typing import List, Dict
 
 # Lazy imports for heavy visualization libraries
 _pd = None
@@ -225,7 +224,7 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
     st.plotly_chart(fig, use_container_width=True)
 
 
-def create_job_comparison_radar(matched_jobs: List[Dict]):
+def create_job_comparison_radar(matched_jobs: list[dict]):
     """Create radar chart for top 3 job comparisons"""
     
     # Lazy load plotly only when radar chart is created
