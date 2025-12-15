@@ -304,7 +304,7 @@ class SemanticJobSearch:
         
         if self.use_persistent_store:
             try:
-                chroma_db_path = os.path.join(os.getcwd(), "data", "chroma_db")
+                chroma_db_path = os.path.join(os.getcwd(), "database", "chroma_db")
                 os.makedirs(chroma_db_path, exist_ok=True)
                 self.chroma_client = chromadb.PersistentClient(path=chroma_db_path)
                 self.collection = self.chroma_client.get_or_create_collection(

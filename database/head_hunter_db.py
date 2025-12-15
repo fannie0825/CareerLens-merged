@@ -16,7 +16,7 @@ from datetime import datetime
 
 
 # Database path constant
-DB_PATH_HEAD_HUNTER = "data/head_hunter_jobs.db"
+DB_PATH_HEAD_HUNTER = "database/head_hunter_jobs.db"
 
 
 class HeadhunterDB:
