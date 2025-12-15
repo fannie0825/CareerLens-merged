@@ -20,7 +20,7 @@ import uuid
 
 
 # Database path constant
-DB_PATH_JOB_SEEKER = "job_seeker.db"
+DB_PATH_JOB_SEEKER = "data/job_seeker.db"
 
 
 class JobSeekerDB:

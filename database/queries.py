@@ -4,7 +4,7 @@ Consolidates all DB access from backend.py
 """
 import sqlite3
 from typing import List, Dict, Optional, Tuple
-from .models import JobSeekerDB, HeadhunterDB, MatchedJobsDB
+from .models import JobSeekerDB, HeadhunterDB, MatchedJobsDB, DB_PATH_JOB_SEEKER, DB_PATH_HEAD_HUNTER
 
 # Initialize singletons
 _job_seeker_db = None
@@ -52,7 +52,7 @@ def get_all_job_seekers_formatted() -> List[Tuple]:
         List of tuples with formatted seeker data for matching
     """
     try:
-        conn = sqlite3.connect('job_seeker.db')
+        conn = sqlite3.connect(DB_PATH_JOB_SEEKER)
         c = conn.cursor()
         c.execute("""
             SELECT
@@ -112,7 +112,7 @@ def get_job_seeker_profile_tuple() -> Optional[Tuple]:
         Tuple of (education_level, work_experience, hard_skills, soft_skills, project_experience)
     """
     try:
-        conn = sqlite3.connect('job_seeker.db')
+        conn = sqlite3.connect(DB_PATH_JOB_SEEKER)
         c = conn.cursor()
         c.execute("""
             SELECT education_level, work_experience, hard_skills, soft_skills,
@@ -141,7 +141,7 @@ def get_all_jobs_for_matching_tuples() -> List[Tuple]:
         List of job tuples from database
     """
     try:
-        conn = sqlite3.connect('head_hunter_jobs.db')
+        conn = sqlite3.connect(DB_PATH_HEAD_HUNTER)
         c = conn.cursor()
         c.execute("""
             SELECT id, job_title, job_description, main_responsibilities, required_skills,
@@ -166,7 +166,7 @@ def get_jobs_for_interview() -> List[Tuple]:
         List of job tuples with fields needed for interviews
     """
     try:
-        conn = sqlite3.connect('head_hunter_jobs.db')
+        conn = sqlite3.connect(DB_PATH_HEAD_HUNTER)
         c = conn.cursor()
         c.execute("""
             SELECT id, job_title, job_description, main_responsibilities, required_skills,
