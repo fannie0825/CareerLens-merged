@@ -24,7 +24,7 @@ from datetime import datetime
 
 
 # Database path constant
-DB_PATH_JOB_POST_API = "job_post_API.db"
+DB_PATH_JOB_POST_API = "database/job_post_API.db"
 
 
 class MatchedJobsDB:

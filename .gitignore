@@ -46,6 +46,15 @@ uploads/
 
 # Database files (if local)
 *.db
+database/*.db
+
+# Ignore ChromaDB vector store data
+database/chroma_db/
+.chroma_db/
+
+# Keep the database folder itself
+!database/.gitkeep
+
 
 # Logs
 *.log
