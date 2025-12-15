@@ -103,12 +103,28 @@ class Config:
         if cls._initialized:
             return
         
-        # Azure OpenAI
+        # Azure OpenAI - Try flat secrets/env vars first
         cls.AZURE_OPENAI_API_KEY = _get_secret('AZURE_OPENAI_API_KEY')
         cls.AZURE_OPENAI_ENDPOINT = _get_secret('AZURE_OPENAI_ENDPOINT')
         cls.AZURE_OPENAI_API_VERSION = _get_secret('AZURE_OPENAI_API_VERSION', '2024-02-15-preview')
         cls.AZURE_OPENAI_DEPLOYMENT = _get_secret('AZURE_OPENAI_DEPLOYMENT', 'gpt-4o-mini')
         cls.AZURE_OPENAI_EMBEDDING_DEPLOYMENT = _get_secret('AZURE_OPENAI_EMBEDDING_DEPLOYMENT', 'text-embedding-3-small')
+        
+        # Support for Streamlit Cloud nested [azure] configuration
+        # This overrides flat secrets if present
+        if STREAMLIT_AVAILABLE:
+            try:
+                # Check for [azure] section
+                if "azure" in st.secrets:
+                    azure_secrets = st.secrets["azure"]
+                    cls.AZURE_OPENAI_API_KEY = azure_secrets.get("api_key", cls.AZURE_OPENAI_API_KEY)
+                    cls.AZURE_OPENAI_ENDPOINT = azure_secrets.get("endpoint", cls.AZURE_OPENAI_ENDPOINT)
+                    cls.AZURE_OPENAI_API_VERSION = azure_secrets.get("api_version", cls.AZURE_OPENAI_API_VERSION)
+                    cls.AZURE_OPENAI_DEPLOYMENT = azure_secrets.get("deployment_name", cls.AZURE_OPENAI_DEPLOYMENT)
+                    # Optional: look for embedding_deployment in [azure] or [azure_embedding] or fall back
+                    cls.AZURE_OPENAI_EMBEDDING_DEPLOYMENT = azure_secrets.get("embedding_deployment", cls.AZURE_OPENAI_EMBEDDING_DEPLOYMENT)
+            except Exception:
+                pass
         
         # Aliases for backward compatibility
         cls.AZURE_API_KEY = cls.AZURE_OPENAI_API_KEY

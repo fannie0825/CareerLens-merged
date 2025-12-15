@@ -20,9 +20,19 @@ try:
         print("Loading credentials from .streamlit/secrets.toml...")
         with open(".streamlit/secrets.toml", "r") as f:
             secrets = toml.load(f)
-            API_KEY = secrets.get("AZURE_OPENAI_API_KEY", API_KEY)
-            ENDPOINT = secrets.get("AZURE_OPENAI_ENDPOINT", ENDPOINT)
-            API_VERSION = secrets.get("AZURE_OPENAI_API_VERSION", API_VERSION)
+            
+            # Check for [azure] section (Streamlit Cloud style)
+            if "azure" in secrets:
+                print("Found [azure] section in secrets.")
+                azure = secrets["azure"]
+                API_KEY = azure.get("api_key", API_KEY)
+                ENDPOINT = azure.get("endpoint", ENDPOINT)
+                API_VERSION = azure.get("api_version", API_VERSION)
+            else:
+                # Fallback to top-level keys
+                API_KEY = secrets.get("AZURE_OPENAI_API_KEY", API_KEY)
+                ENDPOINT = secrets.get("AZURE_OPENAI_ENDPOINT", ENDPOINT)
+                API_VERSION = secrets.get("AZURE_OPENAI_API_VERSION", API_VERSION)
 except ImportError:
     print("toml module not found, using hardcoded variables.")
 except Exception as e:
