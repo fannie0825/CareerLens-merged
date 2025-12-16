@@ -237,7 +237,7 @@ def match_location(job, job_seeker_data: dict) -> float:
         return 0.0
     return 100.0 if seeker_location in job_location or seeker_location == "Hong Kong" and job_location in ["HK", "Hong Kong"] else 30.0
 
-def create_job_comparison_radar(matched_job: dict, job: dict, job_seeker_data: dict):
+def create_job_comparison_radar(matched_job: dict, job: dict, job_seeker_data: dict, chart_key: str):
     """Create radar chart for top 3 job comparisons"""
     
     # Lazy load plotly only when radar chart is created
@@ -296,7 +296,7 @@ def create_job_comparison_radar(matched_job: dict, job: dict, job_seeker_data: d
             margin=dict(l=80, r=80, t=80, b=80)
         )
         
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key=f"radar_chart_{chart_key}")
         
     except Exception as e:
         st.error(f"Error creating radar chart: {str(e)}")
