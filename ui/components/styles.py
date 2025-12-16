@@ -153,9 +153,16 @@ def render_styles():
         header[data-testid="stHeader"] {{visibility: hidden; height: 0; padding: 0; margin: 0;}}
         .stDeployButton {{display: none;}}
         
-        .stApp {{
+        .stApp, [data-testid="stAppViewContainer"] {{
             background-color: var(--bg-gray);
             color: var(--text-primary);
+        }}
+
+        /* Main Block Container - Center content and max width */
+        [data-testid="stMainBlockContainer"] {{
+            max_width: 1200px;
+            padding-top: 2rem;
+            padding-bottom: 5rem;
         }}
         
         [data-testid="stSidebar"] {{
@@ -177,16 +184,17 @@ def render_styles():
             font-family: 'Montserrat', sans-serif;
         }}
         [data-testid="stSidebar"] .stButton > button {{
-            background: var(--accent-gradient);
+            background: var(--accent-gradient) !important;
             color: #FFFFFF !important;
             font-family: 'Montserrat', sans-serif;
             font-weight: 700 !important;
-            border: none;
-            border-radius: 50px;
+            border: none !important;
+            border-radius: 50px !important;
             box-shadow: 0 0 20px rgba(0, 210, 255, 0.4);
+            transition: all 0.3s ease;
         }}
         [data-testid="stSidebar"] .stButton > button:hover {{
-            box-shadow: 0 0 30px rgba(0, 210, 255, 0.6);
+            box-shadow: 0 0 30px rgba(0, 210, 255, 0.6) !important;
             transform: translateY(-2px);
         }}
         
