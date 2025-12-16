@@ -116,31 +116,6 @@ def render_sidebar():
                     st.success(f"✅ Using profile for: {st.session_state.user_profile.get('name', 'Unknown')}")
         
         st.markdown("---")
-        st.markdown("### 2. Set Search Criteria")
-        
-        target_domains = st.multiselect(
-            "Target Domains",
-            options=["FinTech", "ESG & Sustainability", "Data Analytics", "Digital Transformation", 
-                    "Investment Banking", "Consulting", "Technology", "Healthcare", "Education"],
-            default=st.session_state.get('target_domains', []),
-            help="Select industries/domains to search for jobs",
-            key="sidebar_target_domains"
-        )
-        st.session_state.target_domains = target_domains
-        
-        salary_expectation = st.slider(
-            "Min. Monthly Salary (HKD)",
-            min_value=0,
-            max_value=150000,
-            value=st.session_state.get('salary_expectation', 0),
-            step=5000,
-            help="Set to 0 to disable salary filtering",
-            key="sidebar_salary"
-        )
-        st.session_state.salary_expectation = salary_expectation
-        
-        st.markdown("---")
-        st.info("💡 Click **Refine Results** in the dashboard to search for jobs with your criteria.")
         
         # Display skill matching explanation
         display_skill_matching_matrix(st.session_state.user_profile)
