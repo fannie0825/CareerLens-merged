@@ -27,8 +27,20 @@ def _load_logo():
     _logo_loaded = True
     from utils.helpers import get_img_as_base64
     
-    logo_paths = ["logo.png", "CareerLens_Logo.png"]
-    for logo_path in logo_paths:
+    logo_names = ["logo.png", "CareerLens_Logo.png"]
+    
+    # Resolve potential paths
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    root_dir = os.path.abspath(os.path.join(current_dir, "../../.."))
+    
+    paths_to_check = []
+    for name in logo_names:
+        # Check CWD first
+        paths_to_check.append(name)
+        # Check root directory
+        paths_to_check.append(os.path.join(root_dir, name))
+        
+    for logo_path in paths_to_check:
         if os.path.exists(logo_path):
             try:
                 logo_base64 = get_img_as_base64(logo_path)
@@ -85,12 +97,20 @@ def render_styles():
     """Render all CSS styles and JavaScript for the application"""
     st.markdown("""
     <style>
-        /* Import Google Fonts for CareerLens branding */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Montserrat:wght@400;700&display=swap');
+        /* Import Google Fonts for CareerLens branding (Updated weights and display) */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+        
+        /* Apply fonts globally */
+        body, .stText, [data-testid="stMarkdownContainer"] p, .stMarkdown {
+            font-family: 'Inter', sans-serif !important;
+        }
+        h1, h2, h3, h4, h5, h6, .stButton > button, [data-testid="stHeader"] {
+            font-family: 'Montserrat', sans-serif !important;
+        }
         
         /* CareerLens Design System - CSS Variables */
-        :root {{
-            /* Backgrounds */
+        :root {
+            /* Backgrounds - Updated to Deep Midnight Navy as per request */
             --bg-primary: #0F172A;   /* Deep Midnight Navy */
             --bg-secondary: #1E293B; /* Slightly lighter navy for cards/sections */
 
@@ -104,7 +124,7 @@ def render_styles():
             --brand-core: #0084C2;   /* The standard logo blue */
             
             /* UI Elements */
-            --accent-gradient: linear-gradient(135deg, #00D2FF 0%, #0084C2 100%);
+            --accent-gradient: linear-gradient(to right, var(--brand-glow), var(--brand-core));
             
             /* Logo Styling */
             --logo-font-size: 60px;
@@ -116,81 +136,90 @@ def render_styles():
             --primary-accent: var(--brand-core);
             --action-accent: var(--brand-glow);
             
-            /* UI Colors */
-            --bg-gray: #f3f4f6;
-            --bg-main: #f3f4f6;
-            --bg-container: #F4F7FC;
-            --card-bg: #FFFFFF;
-            --text-primary: #161616;
-            --border-color: #E0E0E0;
-            --hover-bg: #F0F0F0;
+            /* UI Colors - Updated Default to Dark Theme (Navy) as per request */
+            --bg-gray: #0F172A;      /* Deep Midnight Navy (was light gray) */
+            --bg-main: #0F172A;      /* Deep Midnight Navy */
+            --bg-container: #1E293B; /* Secondary Navy */
+            --card-bg: #1E293B;      /* Card bg match container */
+            --text-primary: #FFFFFF; /* White text for dark bg */
+            --border-color: #334155; /* Slate-700 for borders */
+            --hover-bg: #334155;
             --success-green: #10B981;
             --warning-amber: #F59E0B;
             --error-red: #EF4444;
-            --navy-deep: #1e3a5f;
-            --navy-light: #2C3E50;
-            --btn-text: #0a0a0a;
-        }}
+            --navy-deep: #0f172a;
+            --navy-light: #1e293b;
+            --btn-text: #FFFFFF;
+        }
         
         [data-theme="dark"],
         html[data-theme="dark"],
-        html[data-theme="dark"] :root {{
+        html[data-theme="dark"] :root {
             --primary-accent: #00D2FF;
             --action-accent: #00D2FF;
-            --bg-main: #161616;
-            --bg-container: #262626;
-            --card-bg: #262626;
-            --text-primary: #F4F4F4;
-            --border-color: #3D3D3D;
-            --hover-bg: #333333;
-            --navy: #1e293b;
-            --cyan: #22d3ee;
-            --bg-gray: #1f2937;
-        }}
+            --bg-main: #0F172A;
+            --bg-container: #1E293B;
+            --card-bg: #1E293B;
+            --text-primary: #FFFFFF;
+            --border-color: #334155;
+            --hover-bg: #334155;
+            --navy: #0F172A;
+            --cyan: #00D2FF;
+            --bg-gray: #0F172A;
+        }
         
-        #MainMenu {{visibility: hidden;}}
-        footer {{visibility: hidden;}}
-        header[data-testid="stHeader"] {{visibility: hidden; height: 0; padding: 0; margin: 0;}}
-        .stDeployButton {{display: none;}}
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+        header[data-testid="stHeader"] {visibility: hidden; height: 0; padding: 0; margin: 0;}
+        .stDeployButton {display: none;}
         
-        .stApp {{
-            background-color: var(--bg-gray);
+        /* Ensure this rule is the last one applied for the background */
+        .stApp, [data-testid="stAppViewContainer"], [data-testid="stApp"] {
+            background-color: #0F172A !important;
             color: var(--text-primary);
-        }}
+        }
+
+        /* Main Block Container - Center content and max width */
+        [data-testid="stMainBlockContainer"] {
+            max_width: 1200px;
+            padding-top: 2rem;
+            padding-bottom: 5rem;
+        }
         
-        [data-testid="stSidebar"] {{
+        [data-testid="stSidebar"] {
             background-color: var(--bg-primary);
             padding: 2rem 1rem;
-        }}
+        }
         [data-testid="stSidebar"] .stMarkdown p,
         [data-testid="stSidebar"] .stMarkdown span,
-        [data-testid="stSidebar"] label {{
+        [data-testid="stSidebar"] label {
             color: var(--text-secondary-light);
             font-family: 'Inter', sans-serif;
-        }}
+        }
         [data-testid="stSidebar"] h1,
         [data-testid="stSidebar"] h2,
         [data-testid="stSidebar"] h3,
         [data-testid="stSidebar"] .stMarkdown h2,
-        [data-testid="stSidebar"] .stMarkdown h3 {{
+        [data-testid="stSidebar"] .stMarkdown h3 {
             color: var(--text-primary-light) !important;
             font-family: 'Montserrat', sans-serif;
-        }}
-        [data-testid="stSidebar"] .stButton > button {{
-            background: var(--accent-gradient);
+        }
+        [data-testid="stSidebar"] .stButton > button {
+            background: var(--accent-gradient) !important;
             color: #FFFFFF !important;
             font-family: 'Montserrat', sans-serif;
             font-weight: 700 !important;
-            border: none;
-            border-radius: 50px;
+            border: none !important;
+            border-radius: 50px !important;
             box-shadow: 0 0 20px rgba(0, 210, 255, 0.4);
-        }}
-        [data-testid="stSidebar"] .stButton > button:hover {{
-            box-shadow: 0 0 30px rgba(0, 210, 255, 0.6);
+            transition: all 0.3s ease;
+        }
+        [data-testid="stSidebar"] .stButton > button:hover {
+            box-shadow: 0 0 30px rgba(0, 210, 255, 0.6) !important;
             transform: translateY(-2px);
-        }}
+        }
         
-        .hero-container {{
+        .hero-container {
             background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
             padding: 40px;
             border-radius: 12px;
@@ -200,26 +229,26 @@ def render_styles():
             margin-bottom: 30px;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
             font-size: 0;
-        }}
-        .hero-container > * {{
+        }
+        .hero-container > * {
             font-size: 16px;
-        }}
-        .hero-content {{
+        }
+        .hero-content {
             position: relative;
             z-index: 10;
-        }}
-        .hero-title {{
+        }
+        .hero-title {
             font-size: 32px;
             font-weight: 700;
             margin: 0;
             color: white;
-        }}
-        .hero-subtitle {{
+        }
+        .hero-subtitle {
             color: var(--text-secondary-light);
             font-size: 16px;
             margin-top: 10px;
-        }}
-        .hero-bg-logo {{
+        }
+        .hero-bg-logo {
             position: absolute;
             right: -30px;
             top: -30px;
@@ -228,8 +257,8 @@ def render_styles():
             transform: rotate(-15deg);
             pointer-events: none;
             z-index: 5;
-        }}
-        .hero-bg-logo-text {{
+        }
+        .hero-bg-logo-text {
             display: flex;
             align-items: center;
             justify-content: center;
@@ -237,8 +266,8 @@ def render_styles():
             height: 150px;
             right: 20px;
             top: 20px;
-        }}
-        .hero-logo-initials {{
+        }
+        .hero-logo-initials {
             font-family: 'Montserrat', sans-serif;
             font-weight: 700;
             font-size: var(--logo-font-size);
@@ -247,52 +276,52 @@ def render_styles():
             -webkit-text-fill-color: transparent;
             background-clip: text;
             opacity: var(--logo-opacity);
-        }}
+        }
         
-        .dashboard-metric-card {{
+        .dashboard-metric-card {
             background: white;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             text-align: center;
-        }}
-        .dashboard-metric-label {{
+        }
+        .dashboard-metric-label {
             font-size: 12px;
             color: #6b7280;
             text-transform: uppercase;
             letter-spacing: 1px;
-        }}
-        .dashboard-metric-value {{
+        }
+        .dashboard-metric-value {
             font-size: 28px;
             font-weight: 700;
             color: #111827;
             margin-top: 5px;
-        }}
+        }
         
-        [data-theme="dark"] .hero-container {{
+        [data-theme="dark"] .hero-container {
             background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
-        }}
-        [data-theme="dark"] .dashboard-metric-card {{
+        }
+        [data-theme="dark"] .dashboard-metric-card {
             background: var(--card-bg);
-        }}
-        [data-theme="dark"] .dashboard-metric-value {{
+        }
+        [data-theme="dark"] .dashboard-metric-value {
             color: var(--text-primary);
-        }}
+        }
         
-        .job-card {{
+        .job-card {
             background-color: var(--bg-container);
             padding: 1.5rem;
             border-radius: 12px;
             margin-bottom: 1.5rem;
             border: none;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }}
-        .job-card:hover {{
+        }
+        .job-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        }}
+        }
         
-        .match-score {{
+        .match-score {
             background: var(--accent-gradient);
             color: white;
             padding: 0.4rem 1rem;
@@ -300,9 +329,9 @@ def render_styles():
             font-weight: bold;
             display: inline-block;
             font-size: 0.9rem;
-        }}
+        }
         
-        .tag {{
+        .tag {
             display: inline-block;
             background-color: var(--bg-container);
             color: var(--text-primary);
@@ -311,16 +340,16 @@ def render_styles():
             margin: 0.2rem;
             font-size: 0.85rem;
             border: none;
-        }}
+        }
         
-        .match-score-display {{
+        .match-score-display {
             font-size: 2rem;
             font-weight: bold;
             color: var(--brand-glow);
             text-align: center;
-        }}
+        }
         
-        .main-header {{
+        .main-header {
             font-size: 3rem;
             font-weight: bold;
             background: var(--accent-gradient);
@@ -330,9 +359,9 @@ def render_styles():
             text-align: center;
             margin-bottom: 1rem;
             letter-spacing: -0.02em;
-        }}
+        }
         
-        .ws-reconnecting-overlay {{
+        .ws-reconnecting-overlay {
             position: fixed;
             top: 0;
             left: 0;
@@ -346,23 +375,23 @@ def render_styles():
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.3s, visibility 0.3s;
-        }}
-        .ws-reconnecting-overlay.active {{
+        }
+        .ws-reconnecting-overlay.active {
             opacity: 1;
             visibility: visible;
-        }}
-        .ws-reconnecting-content {{
+        }
+        .ws-reconnecting-content {
             background: white;
             padding: 30px 40px;
             border-radius: 12px;
             text-align: center;
             box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-        }}
-        [data-theme="dark"] .ws-reconnecting-content {{
+        }
+        [data-theme="dark"] .ws-reconnecting-content {
             background: #262626;
             color: #f4f4f4;
-        }}
-        .ws-reconnecting-spinner {{
+        }
+        .ws-reconnecting-spinner {
             width: 40px;
             height: 40px;
             border: 4px solid #e0e0e0;
@@ -370,70 +399,70 @@ def render_styles():
             border-radius: 50%;
             animation: ws-spin 1s linear infinite;
             margin: 0 auto 15px;
-        }}
-        @keyframes ws-spin {{
-            to {{ transform: rotate(360deg); }}
-        }}
-        .ws-reconnecting-text {{
+        }
+        @keyframes ws-spin {
+            to { transform: rotate(360deg); }
+        }
+        .ws-reconnecting-text {
             font-size: 16px;
             color: #333;
             margin-bottom: 5px;
-        }}
-        [data-theme="dark"] .ws-reconnecting-text {{
+        }
+        [data-theme="dark"] .ws-reconnecting-text {
             color: #f4f4f4;
-        }}
-        .ws-reconnecting-subtext {{
+        }
+        .ws-reconnecting-subtext {
             font-size: 13px;
             color: #666;
-        }}
-        [data-theme="dark"] .ws-reconnecting-subtext {{
+        }
+        [data-theme="dark"] .ws-reconnecting-subtext {
             color: #999;
-        }}
+        }
         
         /* How It Works Page Styles */
-        .how-it-works-section {{
+        .how-it-works-section {
             background: var(--card-bg);
             padding: 1.5rem;
             border-radius: 12px;
             margin: 1rem 0;
             border-left: 4px solid var(--brand-glow);
-        }}
+        }
         
-        .step-box {{
+        .step-box {
             background: var(--card-bg);
             padding: 2rem;
             border-radius: 12px;
             margin: 1.5rem 0;
             border: 2px solid var(--brand-core);
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-        }}
+        }
         
-        .step-box h3 {{
+        .step-box h3 {
             color: var(--brand-glow);
             margin-top: 0;
-        }}
+        }
         
-        .step-box h4 {{
+        .step-box h4 {
             color: var(--brand-core);
             margin-top: 1.5rem;
-        }}
+        }
         
-        .step-box code {{
+        .step-box code {
             background: var(--bg-container);
             padding: 0.2rem 0.4rem;
             border-radius: 4px;
             font-family: 'Courier New', monospace;
-        }}
+        }
         
-        .step-box pre {{
+        .step-box pre {
             background: var(--bg-container);
             padding: 1rem;
             border-radius: 8px;
             overflow-x: auto;
             border-left: 3px solid var(--brand-glow);
-        }}
+        }
         
-        .tech-badge {{
+        .tech-badge {
             display: inline-block;
             background: var(--accent-gradient);
             color: white;
@@ -442,34 +471,34 @@ def render_styles():
             margin: 0.3rem;
             font-size: 0.9rem;
             font-weight: 600;
-        }}
+        }
         
-        [data-theme="dark"] .how-it-works-section {{
+        [data-theme="dark"] .how-it-works-section {
             background: var(--bg-container);
-        }}
+        }
         
-        [data-theme="dark"] .step-box {{
+        [data-theme="dark"] .step-box {
             background: var(--bg-container);
-        }}
+        }
         
         /* Info Banner */
-        .info-banner {{
+        .info-banner {
             background: var(--accent-gradient);
             padding: 1.5rem;
             border-radius: 12px;
             margin-bottom: 1.5rem;
             color: white;
-        }}
+        }
         
-        .info-banner h3 {{
+        .info-banner h3 {
             margin: 0;
             color: white;
-        }}
+        }
         
-        .info-banner p {{
+        .info-banner p {
             margin: 0.5rem 0 0 0;
             opacity: 0.9;
-        }}
+        }
     </style>
     <div id="ws-reconnecting-overlay" class="ws-reconnecting-overlay">
         <div class="ws-reconnecting-content">

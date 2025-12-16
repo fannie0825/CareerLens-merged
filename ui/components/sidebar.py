@@ -1,5 +1,6 @@
 """Sidebar UI component"""
 import streamlit as st
+import os
 import time
 from core.resume_parser import extract_text_from_resume, extract_profile_from_resume
 from core.semantic_search import generate_and_store_resume_embedding
@@ -14,7 +15,18 @@ def render_sidebar():
     """
     with st.sidebar:
         # Display logo image at the top
-        st.image("CareerLens_Logo.png", use_container_width=True)
+        # Try to resolve logo path relative to workspace root
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        root_dir = os.path.abspath(os.path.join(current_dir, "../../.."))
+        logo_path = os.path.join(root_dir, "CareerLens_Logo.png")
+        
+        # Check if custom logo exists
+        custom_logo = os.path.join(root_dir, "logo.png")
+        if os.path.exists(custom_logo):
+            logo_path = custom_logo
+            
+        if os.path.exists(logo_path):
+            st.image(logo_path, use_container_width=True)
         
         st.markdown("""
         <style>
@@ -116,31 +128,6 @@ def render_sidebar():
                     st.success(f"✅ Using profile for: {st.session_state.user_profile.get('name', 'Unknown')}")
         
         st.markdown("---")
-        st.markdown("### 2. Set Search Criteria")
-        
-        target_domains = st.multiselect(
-            "Target Domains",
-            options=["FinTech", "ESG & Sustainability", "Data Analytics", "Digital Transformation", 
-                    "Investment Banking", "Consulting", "Technology", "Healthcare", "Education"],
-            default=st.session_state.get('target_domains', []),
-            help="Select industries/domains to search for jobs",
-            key="sidebar_target_domains"
-        )
-        st.session_state.target_domains = target_domains
-        
-        salary_expectation = st.slider(
-            "Min. Monthly Salary (HKD)",
-            min_value=0,
-            max_value=150000,
-            value=st.session_state.get('salary_expectation', 0),
-            step=5000,
-            help="Set to 0 to disable salary filtering",
-            key="sidebar_salary"
-        )
-        st.session_state.salary_expectation = salary_expectation
-        
-        st.markdown("---")
-        st.info("💡 Click **Refine Results** in the dashboard to search for jobs with your criteria.")
         
         # Display skill matching explanation
         display_skill_matching_matrix(st.session_state.user_profile)

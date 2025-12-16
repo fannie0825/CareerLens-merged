@@ -78,6 +78,7 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
 
     for j in matched_jobs:
         job = j.get("job", {})
+        
         label = f"{job.get('job_title', 'N/A')} @ {job.get('company_name', '')}"
         job_titles.append(label)
         sim_scores.append(j.get("cosine_similarity_score", 0))
