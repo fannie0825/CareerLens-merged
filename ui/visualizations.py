@@ -77,14 +77,14 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
     missing_skill_counts = []
 
     for j in matched_jobs:
-        job = j.get("job", {})
+        job = j.get("job", j)
         
-        label = f"{job.get('job_title', 'N/A')} @ {job.get('company_name', '')}"
+        label = f"{job.get('title', 'N/A')} @ {job.get('company', '')}"
         job_titles.append(label)
-        sim_scores.append(j.get("cosine_similarity_score", 0))
-        skill_scores.append(j.get("skill_match_score", 0))
+        sim_scores.append(j.get("semantic_score", 0))
+        skill_scores.append(j.get("skill_match_percentage", 0))
         exp_scores.append(j.get("experience_match_score", 0))
-        match_percentages.append(j.get("match_percentage", 0))
+        match_percentages.append(j.get("combined_score", 0))
 
         # Salary
         sal_min = job.get("salary_min")
@@ -151,17 +151,6 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
         salary_fig = go.Figure([go.Bar(x=job_titles, y=base_salary, text=salary_labels, textposition='auto')])
         salary_fig.update_layout(xaxis_tickangle=-45, yaxis_title="Average Salary")
         st.plotly_chart(salary_fig, use_container_width=True)
-
-    # 3. Industry Distribution
-    st.subheader("Industry Distribution")
-    inds = [i for i in industries if i and i != "N/A"]
-    if inds:
-        inds_ct = Counter(inds)
-        fig = go.Figure([go.Bar(x=list(inds_ct.keys()), y=list(inds_ct.values()))])
-        fig.update_layout(yaxis_title="Number of Jobs")
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.caption("No industry data available.")
 
     # 4. Employment Type Frequencies
     st.subheader("Employment Type Frequencies")
