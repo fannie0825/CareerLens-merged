@@ -38,7 +38,8 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
         from utils.config import _determine_index_limit
         from ui.components.dashboard import (
             display_market_positioning_profile,
-            calculate_match_scores
+            calculate_match_scores,
+            display_refine_results_section
         )
         MODULES_AVAILABLE = True
     except ImportError:
@@ -481,6 +482,9 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
             st.warning("⚠️ No matched jobs found. Please try adjusting your search criteria.")
             
     if matched_jobs and len(matched_jobs) > 0:
+        # Display Refine Results Section (Filters)
+        display_refine_results_section(matched_jobs, job_seeker_data)
+
         # Display CareerLens Market Positioning Dashboard
         if MODULES_AVAILABLE:
             display_market_positioning_profile(matched_jobs, job_seeker_data)
