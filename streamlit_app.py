@@ -288,149 +288,15 @@ def display_token_usage():
 # ============================================================================
 # SIDEBAR NAVIGATION
 # ============================================================================
-st.sidebar.image("CareerLens_Logo.png", use_container_width=True)
-
-st.sidebar.markdown("""
-<style>
-    /* CareerLens Logo and Branding */
-    .careerlens-logo {
-        font-family: 'Montserrat', sans-serif;
-        font-size: 2rem;
-        font-weight: 700;
-        text-align: center;
-        margin-bottom: 0.5rem;
-        letter-spacing: -1px;
-    }
-    .careerlens-logo .brand-span {
-        color: var(--brand-core);
-    }
-    .careerlens-logo .lens-span {
-        color: var(--brand-glow);
-    }
-    .careerlens-tagline {
-        font-family: 'Montserrat', sans-serif;
-        color: var(--text-secondary-light);
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        font-size: 0.7rem;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    
-    /* Navigation Section Headers */
-    .nav-section-header {
-        font-family: 'Montserrat', sans-serif;
-        font-weight: 700;
-        font-size: 1.1rem;
-        margin-top: 1.5rem;
-        margin-bottom: 0.5rem;
-        padding-left: 0.5rem;
-        border-left: 3px solid var(--brand-glow);
-    }
-    
-    /* Navigation Items */
-    .nav-item {
-        font-family: 'Inter', sans-serif;
-        color: var(--text-secondary-light) !important;
-        font-size: 0.9rem;
-        padding-left: 1.5rem;
-        margin: 0.3rem 0;
-        cursor: pointer;
-    }
-    .nav-item:hover {
-        color: var(--brand-glow) !important;
-    }
-
-</style>
-
-<div class="careerlens-logo">
-    <span class="brand-span">Career</span><span class="lens-span">Lens</span>
-</div>
-<div class="careerlens-tagline">AI Career Copilot • Hong Kong</div>
-""", unsafe_allow_html=True)
-
-st.sidebar.markdown("---")
-
-# Job Seeker Section
-st.sidebar.markdown('<div class="nav-section-header" style="color: black !important;">👤 Job Seeker</div>', unsafe_allow_html=True)
-if st.sidebar.button("🏠 Job Seeker", use_container_width=True, key="main_btn"):
-    st.session_state.current_page = "main"
-if st.sidebar.button("💼 Job Matching", use_container_width=True, key="job_matching_btn"):
-    st.session_state.current_page = "job_recommendations"
-if st.sidebar.button("📝 AI Powered Tailored Resume", use_container_width=True, key="tailored_resume_btn"):
-    st.session_state.current_page = "tailored_resume"
-if st.sidebar.button("🤖 AI Mock Interview", use_container_width=True, key="ai_interview_btn"):
-    st.session_state.current_page = "ai_interview"
-if st.sidebar.button("📊 Market Dashboard", use_container_width=True, key="market_dashboard_btn"):
-    st.session_state.current_page = "market_dashboard"
-if st.sidebar.button("🧠 How This App Works", use_container_width=True, key="how_it_works_btn"):
-    st.session_state.current_page = "how_it_works"
-
-st.sidebar.markdown("---")
-
-# Recruiter Section
-st.sidebar.markdown('<div class="nav-section-header" style="color: black !important;">🎯 Recruiter</div>', unsafe_allow_html=True)
-if st.sidebar.button("📋 Job Posting", use_container_width=True, key="job_posting_btn"):
-    st.session_state.current_page = "head_hunter"
-if st.sidebar.button("🔍 Recruitment Match", use_container_width=True, key="recruitment_match_btn"):
-    st.session_state.current_page = "recruitment_match"
-
-st.sidebar.markdown("---")
-
-# CareerLens Tools sidebar section
-with st.sidebar:
-    st.subheader("🔍 CareerLens Tools")
-    
-    # Display domain filter on job recommendations page
-    if st.session_state.current_page == "job_recommendations":
-        with st.expander("🏭 Industry Filters", expanded=False):
-            target_domains = st.multiselect(
-                "Target Domains",
-                options=["FinTech", "ESG & Sustainability", "Data Analytics", "Digital Transformation", 
-                        "Investment Banking", "Consulting", "Technology", "Healthcare", "Education"],
-                default=st.session_state.get('target_domains', []),
-                key="sidebar_domain_filter"
-            )
-            st.session_state.target_domains = target_domains
-            
-            salary_exp = st.slider(
-                "Min. Salary (HKD)",
-                min_value=0,
-                max_value=150000,
-                value=st.session_state.get('salary_expectation', 0),
-                step=5000,
-                key="sidebar_salary_filter"
-            )
-            st.session_state.salary_expectation = salary_exp
-    
-    # Display token usage
-    display_token_usage()
-    
-    st.markdown("---")
-    st.subheader("🔧 Database Debug")
-    
-    if st.button("View All Job Seeker Records"):
-        try:
-            conn = sqlite3.connect('job_seeker.db')
-            c = conn.cursor()
-            c.execute("SELECT job_seeker_id, timestamp, education_level, primary_role FROM job_seekers ORDER BY id DESC")
-            results = c.fetchall()
-            conn.close()
-            
-            if results:
-                st.write("📋 All Job Seeker Records:")
-                for record in results:
-                    st.write(f"- ID: {record[0]}, Time: {record[1]}, Education: {record[2]}, Role: {record[3]}")
-            else:
-                st.write("No job seeker records yet")
-        except Exception as e:
-            st.error(f"Query failed: {e}")
-    
-    # Display current session state
-    current_id = st.session_state.get('job_seeker_id')
-    if current_id:
-        st.info(f"Current Session ID: **{current_id}**")
-
+if MODULES_AVAILABLE:
+    try:
+        modular_render_sidebar()
+    except NameError:
+        # Fallback if modular_render_sidebar is not defined
+        from ui.components.sidebar import render_sidebar
+        render_sidebar()
+    except Exception as e:
+        st.sidebar.error(f"Error loading sidebar: {e}")
 
 # ============================================================================
 # PAGE ROUTING
@@ -479,24 +345,8 @@ elif st.session_state.current_page == "how_it_works":
 
 
 # ============================================================================
-# SIDEBAR HELP AND FOOTER
+# FOOTER
 # ============================================================================
-st.sidebar.markdown("---")
-st.sidebar.markdown("""
-### 💡 Usage Instructions
-
-**For Job Seekers:**
-- **Job Seeker**: Upload your CV and fill in your profile
-- **Job Matching**: Find AI-matched positions based on your profile
-- **AI Powered Tailored Resume**: Generate job-specific resumes
-- **AI Mock Interview**: Practice with AI-powered mock interviews
-- **Market Dashboard**: View comprehensive market insights
-- **How This App Works**: Learn about our AI technology
-
-**For Recruiters:**
-- **Job Posting**: Publish and manage job openings
-- **Recruitment Match**: Smart candidate-position matching
-""")
                     
 # Footer
 st.markdown("---")

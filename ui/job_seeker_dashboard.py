@@ -121,6 +121,24 @@ def main_analyzer_page():
     analysis_complete = False
     ai_analysis = {}  # Initialize ai_analysis
 
+    # Check for existing profile data from sidebar upload if not already analyzing
+    if 'user_profile' in st.session_state and st.session_state.user_profile and not st.session_state.get('autofill_data'):
+        p = st.session_state.user_profile
+        # Map sidebar profile to form data
+        sidebar_data = {
+            "name": p.get('name', ''),
+            "email": p.get('email', ''),
+            "phone": p.get('phone', ''),
+            "linkedin": p.get('linkedin', ''),
+            "portfolio": p.get('portfolio', ''),
+            "summary": p.get('summary', ''),
+            "hard_skills": p.get('skills', ''),
+            "certificates": p.get('certifications', ''),
+            "detailed_experience": p.get('experience', ''),
+            "education_level": p.get('education', ''),
+        }
+        st.session_state.autofill_data = sidebar_data
+
     if cv_file:
         st.success(f"✅ Uploaded: **{cv_file.name}**")
 
