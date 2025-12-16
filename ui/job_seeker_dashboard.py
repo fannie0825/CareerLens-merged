@@ -379,7 +379,7 @@ def main_analyzer_page():
                 )
 
             with col2:
-                uni_options = ["Please select", "985 Universities", "211 Universities", "Overseas Universities", "Hong Kong Undergraduate Universities", "Other"]
+                uni_options = ["Please select", "985 Universities", "211 Universities", "Overseas Universities", "Hong Kong Universities", "Other"]
                 uni_bg = current_data.get("university_background", "")
                 uni_index = smart_select_match(uni_bg, uni_options)
                 
@@ -389,7 +389,7 @@ def main_analyzer_page():
                     index=uni_index
                 )
                 
-                languages = st.text_input("Languages", 
+                languages = st.text_input("Languages*", 
                                         value=current_data.get("languages", ""),
                                         placeholder="e.g., English, Mandarin, Cantonese")
                 
@@ -475,7 +475,8 @@ def main_analyzer_page():
             if submitted:
                 if (education_level == "Please select" or graduation_status == "Please select" or
                     university_background == "Please select" or work_experience == "Please select" or
-                    location_preference == "Please select" or not primary_role.strip() or not simple_search_terms.strip()):
+                    location_preference == "Please select" or not primary_role.strip() or 
+                    not simple_search_terms.strip() or not languages.strip()):
                     st.error("Please complete all required fields (marked with *)!")
                 else:
                     # Save to database - pass as dictionary

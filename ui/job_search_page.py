@@ -256,17 +256,45 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
                 col_cache1, col_cache2 = st.columns(2)
                 with col_cache1:
                     if st.button("📂 Use Cached Results", use_container_width=True):
-                        use_cached = True
                         cached_matches = matched_db.get_matched_jobs(
                             current_job_seeker_id, 
                             min_match=0, 
                             purpose='general',
                             limit=50
                         )
+
+                        if cached_matches:
+                            # Convert DB format to display format
+                            processed_matches = []
+                            for job in cached_matches:
+                                processed_matches.append({
+                                    'job': {
+                                        'title': job.get('job_title', ''),
+                                        'company': job.get('company_name', ''),
+                                        'location': job.get('location', ''),
+                                        'description': job.get('job_description', ''),
+                                        'skills': [s.strip() for s in job.get('required_skills', '').split(',') if s.strip()],
+                                        'url': job.get('application_url', ''),
+                                        'posted_date': job.get('posted_date', ''),
+                                        'job_type': job.get('employment_type', ''),
+                                        'id': job.get('job_id', '')
+                                    },
+                                    'combined_score': job.get('match_percentage', 0),
+                                    'semantic_score': (job.get('cosine_similarity_score', 0) or 0) * 100,
+                                    'skill_match_percentage': (job.get('skill_match_score', 0) or 0) * 100,
+                                    'matched_skills': [s.strip() for s in job.get('matched_skills', '').split(',') if s.strip()],
+                                    'missing_skills': [s.strip() for s in job.get('missing_skills', '').split(',') if s.strip()],
+                                })
+                            
+                            st.session_state.matched_jobs = processed_matches
+                            st.success(f"✅ Loaded {len(processed_matches)} cached matched jobs!")
+                            st.rerun()
+                            
                 with col_cache2:
                     st.caption("Or search for new jobs below ↓")
         except Exception as e:
             # Silently continue if cache check fails
+            print(f"Cache check failed: {e}")
             pass
     
     # -------------------------------------------------------
@@ -277,32 +305,7 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
     
     matched_jobs = st.session_state.get('matched_jobs', [])
     
-    # Handle cached results (Step 0)
-    if use_cached and cached_matches:
-        st.success(f"✅ Loaded {len(cached_matches)} cached matched jobs!")
-        # Convert DB format to display format
-        matched_jobs = []
-        for job in cached_matches:
-            matched_jobs.append({
-                'job': {
-                    'title': job.get('job_title', ''),
-                    'company': job.get('company_name', ''),
-                    'location': job.get('location', ''),
-                    'description': job.get('job_description', ''),
-                    'skills': [s.strip() for s in job.get('required_skills', '').split(',') if s.strip()],
-                    'url': job.get('application_url', ''),
-                    'posted_date': job.get('posted_date', ''),
-                    'job_type': job.get('employment_type', ''),
-                    'id': job.get('job_id', '')
-                },
-                'combined_score': job.get('match_percentage', 0),
-                'semantic_score': (job.get('cosine_similarity_score', 0) or 0) * 100,
-                'skill_match_percentage': (job.get('skill_match_score', 0) or 0) * 100,
-                'matched_skills': [s.strip() for s in job.get('matched_skills', '').split(',') if s.strip()],
-                'missing_skills': [s.strip() for s in job.get('missing_skills', '').split(',') if s.strip()],
-            })
-        st.session_state.matched_jobs = matched_jobs
-    elif search_button:
+    if search_button:
         if not MODULES_AVAILABLE:
             st.error("⚠️ Search modules not available. Please check your installation.")
             matched_jobs = []
@@ -427,14 +430,15 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
                                             for job in matched_jobs:
                                                 combined_score = job.get('combined_score', job.get('combined_match_score', 0))
                                                 
-                                                if combined_score >= MATCH_SCORE_THRESHOLD:
-                                                    job_record = _prepare_job_for_storage(current_job_seeker_id, job)
-                                                    jobs_to_store.append(job_record)
+                                                # Save all matched jobs regardless of score
+                                                # if combined_score >= MATCH_SCORE_THRESHOLD:
+                                                job_record = _prepare_job_for_storage(current_job_seeker_id, job)
+                                                jobs_to_store.append(job_record)
                                             
                                             # Store in job_post_API.db
                                             if jobs_to_store:
                                                 saved_count = save_matched_jobs_batch(jobs_to_store)
-                                                st.caption(f"💾 Saved {saved_count} jobs above {MATCH_SCORE_THRESHOLD}% match to your profile")
+                                                st.caption(f"💾 Saved {saved_count} matched jobs to your profile")
                                         except Exception as e:
                                             # Don't block the UI if storage fails
                                             print(f"Warning: Could not store matched jobs: {e}")
@@ -663,7 +667,21 @@ def _display_job_matches(matched_jobs: List[Dict], num_jobs_to_show: int, job_se
             f"- {match_emoji} {match_label} ({combined:.1f}%)"
         )
 
-        with st.expander(expander_title, expanded=i <= 2):
+        # Check if this job is selected for resume tailoring to keep expanded
+        is_selected_for_resume = False
+        selected_job = st.session_state.get('selected_job_for_resume')
+        if st.session_state.get('show_resume_generator') and selected_job:
+            # Check by ID if available, otherwise by title and company
+            if job.get('id') is not None and selected_job.get('id') is not None:
+                is_selected_for_resume = (str(job.get('id')) == str(selected_job.get('id')))
+            else:
+                # Fallback check
+                is_selected_for_resume = (
+                    job.get('title') == selected_job.get('title') and 
+                    job.get('company') == selected_job.get('company')
+                )
+
+        with st.expander(expander_title, expanded=(i <= 2) or is_selected_for_resume):
 
             # Scores - use result for scores, job for job data
             semantic_score = result.get('semantic_score', result.get('similarity_score', 0))
@@ -785,12 +803,11 @@ def _display_job_matches(matched_jobs: List[Dict], num_jobs_to_show: int, job_se
             with col_btn2:
                 # Resume tailoring button
                 if st.button("✨ Tailor Resume", key=f"tailor_{job.get('id', i)}", use_container_width=True):
+                    # Set both session state variables for compatibility
                     st.session_state.selected_job_for_resume = job
+                    st.session_state.selected_job = job
                     st.session_state.show_resume_generator = True
 
-            # Create radar chart for this job, added 15/12/2025 by Michael
-            create_job_comparison_radar([result])
-        
             # Show resume generator if selected
             if st.session_state.get('show_resume_generator') and st.session_state.get('selected_job_for_resume', {}).get('id') == job.get('id'):
                 with st.container():
@@ -807,6 +824,9 @@ def _display_job_matches(matched_jobs: List[Dict], num_jobs_to_show: int, job_se
                         st.session_state.show_resume_generator = False
                         st.session_state.selected_job_for_resume = None
                         st.rerun()
+
+            # Create radar chart for this job, added 15/12/2025 by Michael
+            create_job_comparison_radar([result])
 
 
 def _display_resume_generator_ui(job: Dict, user_profile: Dict, resume_text: str = ""):
