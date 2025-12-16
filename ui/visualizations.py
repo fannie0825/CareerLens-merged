@@ -227,7 +227,7 @@ def find_salary_expectation(job, job_seeker_data: dict) -> float:
     hunter_max = job.get("salary_max", 0)
     hunter_avg = (hunter_min + hunter_max) / 2 if hunter_min and hunter_max else max(hunter_min, hunter_max)
 
-    return max(1, hunter_avg / seeker_expectation) if seeker_expectation else 0
+    return max(100, hunter_avg / seeker_expectation) if seeker_expectation else 0
 
 def match_location(job, job_seeker_data: dict) -> float:
     """Simple location match scoring"""
@@ -235,7 +235,7 @@ def match_location(job, job_seeker_data: dict) -> float:
     seeker_location = job_seeker_data.get("preferred_location", "").lower()
     if not job_location or not seeker_location:
         return 0.0
-    return 100.0 if seeker_location in job_location or seeker_location == "Hong Kong" and job_location in ["HK", "Hong Kong"] else 0.0
+    return 100.0 if seeker_location in job_location or seeker_location == "Hong Kong" and job_location in ["HK", "Hong Kong"] else 30.0
 
 def create_job_comparison_radar(matched_job: dict, job: dict, job_seeker_data: dict):
     """Create radar chart for top 3 job comparisons"""

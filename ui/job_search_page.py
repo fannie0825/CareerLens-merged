@@ -39,7 +39,7 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
         from ui.components.dashboard import (
             display_market_positioning_profile,
             calculate_match_scores,
-            display_refine_results_section
+            display_refine_results_section  
         )
         MODULES_AVAILABLE = True
     except ImportError:
@@ -487,15 +487,12 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
             st.warning("⚠️ No matched jobs found. Please try adjusting your search criteria.")
             
     if matched_jobs and len(matched_jobs) > 0:
-        # Display Refine Results Section (Filters)
-        display_refine_results_section(matched_jobs, job_seeker_data)
-
         # Display CareerLens Market Positioning Dashboard
         if MODULES_AVAILABLE:
             display_market_positioning_profile(matched_jobs, job_seeker_data)
         
         # Create enhanced visualizations
-        create_enhanced_visualizations(matched_jobs, job_seeker_data)
+        create_enhanced_visualizations(processed_matches, job_seeker_data)
         
         # Create radar chart comparison for top jobs
         # create_job_comparison_radar(matched_jobs)
@@ -591,8 +588,8 @@ def _prepare_job_for_storage(job_seeker_id: str, job: Dict) -> Dict:
         'required_skills': required_skills_str,
         'preferred_skills': '',
         'experience_required': job_data.get('experience_level', ''),
-        'salary_min': None,
-        'salary_max': None,
+        'salary_min': job_data.get('salary_min', 0),
+        'salary_max': job_data.get('salary_max', 0),
         'employment_type': job_data.get('job_type', 'Full-time'),
         'industry': job_data.get('industry', ''),
         'posted_date': job_data.get('posted_date', ''),
