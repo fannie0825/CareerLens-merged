@@ -17,7 +17,7 @@ def render_sidebar():
         # Display logo image at the top
         # Try to resolve logo path relative to workspace root
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        root_dir = os.path.abspath(os.path.join(current_dir, "../../.."))
+        root_dir = os.path.abspath(os.path.join(current_dir, "../.."))
         logo_path = os.path.join(root_dir, "CareerLens_Logo.png")
         
         # Check if custom logo exists

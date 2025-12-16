@@ -31,7 +31,7 @@ def _load_logo():
     
     # Resolve potential paths
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    root_dir = os.path.abspath(os.path.join(current_dir, "../../.."))
+    root_dir = os.path.abspath(os.path.join(current_dir, "../.."))
     
     paths_to_check = []
     for name in logo_names:
