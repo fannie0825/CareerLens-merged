@@ -1306,6 +1306,7 @@ Please extract and return the following information in JSON format:
     "job_description": "Detailed introduction (summary)",
     "main_responsibilities": "List of responsibilities (bullet points)",
     "required_skills": "List of required skills and qualifications (bullet points)",
+    "languages": "List of required languages (e.g. English, Cantonese)",
     "client_company": "Company Name",
     "industry": "Industry (Technology/Finance/Consulting/Healthcare/Education/Manufacturing/Retail/Other)",
     "work_location": "Location (Hong Kong/Mainland China/Overseas/Remote)",
@@ -1324,6 +1325,8 @@ Important:
 - Infer missing fields based on context (e.g., set default "Office" for work_type if not specified).
 - Standardize enum values as requested above.
 - If salary is not found, estimate a reasonable range or use 0.
+- Extract languages separately into the "languages" field. Do NOT include generic language requirements in "required_skills".
+- Do NOT include work type (Full-time/Part-time) in "required_skills".
 - Return ONLY valid JSON, no additional text."""
         
         print("🤖 Extracting job posting information...")

@@ -91,7 +91,8 @@ def get_all_job_seekers_formatted() -> List[Tuple]:
                 seeker[4] or "",  # target_industry (industry_preference)
                 seeker[5] or "",  # target_location (location_preference)
                 seeker[6] or "",  # expected_salary (salary_expectation)
-                seeker[7] or ""   # current_title (university_background)
+                seeker[7] or "",  # current_title (university_background)
+                seeker[9] or ""   # languages
             ))
 
         return formatted_seekers
@@ -147,7 +148,7 @@ def get_all_jobs_for_matching_tuples() -> List[Tuple]:
             SELECT id, job_title, job_description, main_responsibilities, required_skills,
                    client_company, industry, work_location, work_type, company_size,
                    employment_type, experience_level, visa_support,
-                   min_salary, max_salary, currency, benefits
+                   min_salary, max_salary, currency, benefits, languages
             FROM head_hunter_jobs
             WHERE job_valid_until >= date('now')
         """)

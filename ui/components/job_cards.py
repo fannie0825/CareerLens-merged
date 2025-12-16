@@ -74,4 +74,5 @@ def display_job_card(result, index):
             if st.button("📄 Resume", key=f"resume_{index}", use_container_width=True, type="primary"):
                 st.session_state.selected_job = job
                 st.session_state.show_resume_generator = True
+                st.session_state.current_page = "tailored_resume"
                 st.rerun()

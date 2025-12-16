@@ -65,7 +65,8 @@ class HeadhunterDB:
                     currency TEXT,
                     benefits TEXT,
                     application_method TEXT,
-                    job_valid_until TEXT
+                    job_valid_until TEXT,
+                    languages TEXT
                 )
             """)
             # Add indexes
@@ -86,13 +87,20 @@ class HeadhunterDB:
         timestamp = job_data.get('timestamp') or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
         with self.get_connection() as conn:
+            # First ensure languages column exists (for backward compatibility)
+            try:
+                conn.execute("ALTER TABLE head_hunter_jobs ADD COLUMN languages TEXT")
+            except Exception:
+                pass
+
             conn.execute("""
                 INSERT INTO head_hunter_jobs (
                     timestamp, job_title, job_description, main_responsibilities, required_skills,
                     client_company, industry, work_location, work_type, company_size,
                     employment_type, experience_level, visa_support,
-                    min_salary, max_salary, currency, benefits, application_method, job_valid_until
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    min_salary, max_salary, currency, benefits, application_method, job_valid_until,
+                    languages
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 timestamp,
                 job_data.get('job_title', ''),
@@ -112,7 +120,8 @@ class HeadhunterDB:
                 job_data.get('currency', ''),
                 job_data.get('benefits', ''),
                 job_data.get('application_method', ''),
-                job_data.get('job_valid_until', '')
+                job_data.get('job_valid_until', ''),
+                job_data.get('languages', '')
             ))
             return True
     

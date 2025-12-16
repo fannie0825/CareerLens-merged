@@ -103,6 +103,10 @@ def publish_new_job():
                                      value=get_val('required_skills'),
                                      placeholder="e.g.: 5+ years experience, proficient in React.js, Computer Science degree...")
 
+        languages = st.text_input("Language Requirements", 
+                                value=get_val('languages'), 
+                                placeholder="e.g.: English, Cantonese, Mandarin")
+
         # Company and Client Information
         st.subheader("🏢 Company and Client Information")
 
@@ -188,6 +192,7 @@ def publish_new_job():
                     'job_description': job_description,
                     'main_responsibilities': main_responsibilities,
                     'required_skills': required_skills,
+                    'languages': languages,
                     'client_company': client_company,
                     'industry': industry,
                     'work_location': work_location,

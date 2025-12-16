@@ -85,7 +85,7 @@ class JobSeekerDB:
             """)
             
             # Migration: Ensure new columns exist (for existing databases)
-            for col in ['detailed_experience', 'name', 'email', 'phone', 'linkedin', 'portfolio', 'summary']:
+            for col in ['detailed_experience', 'name', 'email', 'phone', 'linkedin', 'portfolio', 'summary', 'last_updated']:
                 try:
                     conn.execute(f"ALTER TABLE job_seekers ADD COLUMN {col} TEXT")
                 except Exception:
@@ -108,19 +108,21 @@ class JobSeekerDB:
         """
         job_seeker_id = profile.get('job_seeker_id') or self.generate_job_seeker_id()
         timestamp = profile.get('timestamp') or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        last_updated = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
         with self.get_connection() as conn:
             conn.execute("""
                 INSERT INTO job_seekers (
-                    job_seeker_id, timestamp, education_level, major, graduation_status,
+                    job_seeker_id, timestamp, last_updated, education_level, major, graduation_status,
                     university_background, languages, certificates, hard_skills, soft_skills,
                     work_experience, project_experience, detailed_experience, location_preference, industry_preference,
                     salary_expectation, benefits_expectation, primary_role, simple_search_terms,
                     name, email, phone, linkedin, portfolio, summary
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 job_seeker_id,
                 timestamp,
+                last_updated,
                 profile.get('education_level', ''),
                 profile.get('major', ''),
                 profile.get('graduation_status', ''),
@@ -248,6 +250,10 @@ class JobSeekerDB:
         # Build dynamic UPDATE statement
         set_clauses = []
         values = []
+        
+        # Always update last_updated
+        updates['last_updated'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
         for key, value in updates.items():
             if key not in ('id', 'job_seeker_id'):  # Don't allow updating these
                 set_clauses.append(f"{key} = ?")

@@ -437,7 +437,10 @@ IMPORTANT: Return ONLY the JSON object, no markdown code blocks, no additional t
             if len(job_description) > 8000:
                 job_desc_for_keywords += "\n\n[Description truncated for keyword extraction - full description available for matching]"
             
-            keyword_prompt = f"""Extract the most important technical skills, tools, technologies, and qualifications mentioned in this job description. 
+            keyword_prompt = f"""Extract the most important technical skills, tools, and technologies mentioned in this job description.
+Do NOT include generic requirements like "English", "Cantonese", "Mandarin", "Full-time", "Degree", or "Communication".
+Focus ONLY on specific hard skills (e.g. Python, SQL, Project Management, SEO).
+
 Return ONLY a JSON object with a "keywords" array, no additional text.
 
 Job Description:
