@@ -37,8 +37,8 @@ def market_dashboard_page():
         return
     
     try:
-        # Render CSS styles
-        render_styles()
+        # Render CSS styles (Handled globally in streamlit_app.py)
+        # render_styles()
         
         # Check if resume generator should be shown
         if st.session_state.get('show_resume_generator', False):

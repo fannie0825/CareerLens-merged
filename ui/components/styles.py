@@ -85,12 +85,20 @@ def render_styles():
     """Render all CSS styles and JavaScript for the application"""
     st.markdown("""
     <style>
-        /* Import Google Fonts for CareerLens branding */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Montserrat:wght@400;700&display=swap');
+        /* Import Google Fonts for CareerLens branding (Updated weights and display) */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+        
+        /* Apply fonts globally */
+        body, .stText, [data-testid="stMarkdownContainer"] p, .stMarkdown {
+            font-family: 'Inter', sans-serif !important;
+        }
+        h1, h2, h3, h4, h5, h6, .stButton > button, [data-testid="stHeader"] {
+            font-family: 'Montserrat', sans-serif !important;
+        }
         
         /* CareerLens Design System - CSS Variables */
-        :root {{
-            /* Backgrounds */
+        :root {
+            /* Backgrounds - Updated to Deep Midnight Navy as per request */
             --bg-primary: #0F172A;   /* Deep Midnight Navy */
             --bg-secondary: #1E293B; /* Slightly lighter navy for cards/sections */
 
@@ -104,7 +112,7 @@ def render_styles():
             --brand-core: #0084C2;   /* The standard logo blue */
             
             /* UI Elements */
-            --accent-gradient: linear-gradient(135deg, #00D2FF 0%, #0084C2 100%);
+            --accent-gradient: linear-gradient(to right, var(--brand-glow), var(--brand-core));
             
             /* Logo Styling */
             --logo-font-size: 60px;
@@ -116,20 +124,20 @@ def render_styles():
             --primary-accent: var(--brand-core);
             --action-accent: var(--brand-glow);
             
-            /* UI Colors */
-            --bg-gray: #f3f4f6;
-            --bg-main: #f3f4f6;
-            --bg-container: #F4F7FC;
-            --card-bg: #FFFFFF;
-            --text-primary: #161616;
-            --border-color: #E0E0E0;
-            --hover-bg: #F0F0F0;
+            /* UI Colors - Updated Default to Dark Theme (Navy) as per request */
+            --bg-gray: #0F172A;      /* Deep Midnight Navy (was light gray) */
+            --bg-main: #0F172A;      /* Deep Midnight Navy */
+            --bg-container: #1E293B; /* Secondary Navy */
+            --card-bg: #1E293B;      /* Card bg match container */
+            --text-primary: #FFFFFF; /* White text for dark bg */
+            --border-color: #334155; /* Slate-700 for borders */
+            --hover-bg: #334155;
             --success-green: #10B981;
             --warning-amber: #F59E0B;
             --error-red: #EF4444;
-            --navy-deep: #1e3a5f;
-            --navy-light: #2C3E50;
-            --btn-text: #0a0a0a;
+            --navy-deep: #0f172a;
+            --navy-light: #1e293b;
+            --btn-text: #FFFFFF;
         }}
         
         [data-theme="dark"],
@@ -153,9 +161,16 @@ def render_styles():
         header[data-testid="stHeader"] {{visibility: hidden; height: 0; padding: 0; margin: 0;}}
         .stDeployButton {{display: none;}}
         
-        .stApp {{
+        .stApp, [data-testid="stAppViewContainer"] {{
             background-color: var(--bg-gray);
             color: var(--text-primary);
+        }}
+
+        /* Main Block Container - Center content and max width */
+        [data-testid="stMainBlockContainer"] {{
+            max_width: 1200px;
+            padding-top: 2rem;
+            padding-bottom: 5rem;
         }}
         
         [data-testid="stSidebar"] {{
@@ -177,16 +192,17 @@ def render_styles():
             font-family: 'Montserrat', sans-serif;
         }}
         [data-testid="stSidebar"] .stButton > button {{
-            background: var(--accent-gradient);
+            background: var(--accent-gradient) !important;
             color: #FFFFFF !important;
             font-family: 'Montserrat', sans-serif;
             font-weight: 700 !important;
-            border: none;
-            border-radius: 50px;
+            border: none !important;
+            border-radius: 50px !important;
             box-shadow: 0 0 20px rgba(0, 210, 255, 0.4);
+            transition: all 0.3s ease;
         }}
         [data-testid="stSidebar"] .stButton > button:hover {{
-            box-shadow: 0 0 30px rgba(0, 210, 255, 0.6);
+            box-shadow: 0 0 30px rgba(0, 210, 255, 0.6) !important;
             transform: translateY(-2px);
         }}
         
