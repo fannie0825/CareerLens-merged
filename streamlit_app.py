@@ -318,7 +318,6 @@ st.sidebar.markdown("""
         font-family: 'Montserrat', sans-serif;
         font-weight: 700;
         font-size: 1.1rem;
-        color: white !important;
         margin-top: 1.5rem;
         margin-bottom: 0.5rem;
         padding-left: 0.5rem;
@@ -337,6 +336,7 @@ st.sidebar.markdown("""
     .nav-item:hover {
         color: var(--brand-glow) !important;
     }
+
 </style>
 
 <div class="careerlens-logo">
