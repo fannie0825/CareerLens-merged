@@ -288,7 +288,19 @@ def display_token_usage():
 # ============================================================================
 # SIDEBAR NAVIGATION
 # ============================================================================
-st.sidebar.image("CareerLens_Logo.png", use_container_width=True)
+# Sidebar Logo
+logo_path = "CareerLens_Logo.png"
+if os.path.exists("logo.png"):
+    logo_path = "logo.png"
+
+if os.path.exists(logo_path):
+    st.sidebar.image(logo_path, use_container_width=True)
+else:
+    # Try absolute path based on current file
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    logo_path = os.path.join(current_dir, "CareerLens_Logo.png")
+    if os.path.exists(logo_path):
+        st.sidebar.image(logo_path, use_container_width=True)
 
 st.sidebar.markdown("""
 <style>

@@ -27,8 +27,20 @@ def _load_logo():
     _logo_loaded = True
     from utils.helpers import get_img_as_base64
     
-    logo_paths = ["logo.png", "CareerLens_Logo.png"]
-    for logo_path in logo_paths:
+    logo_names = ["logo.png", "CareerLens_Logo.png"]
+    
+    # Resolve potential paths
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    root_dir = os.path.abspath(os.path.join(current_dir, "../../.."))
+    
+    paths_to_check = []
+    for name in logo_names:
+        # Check CWD first
+        paths_to_check.append(name)
+        # Check root directory
+        paths_to_check.append(os.path.join(root_dir, name))
+        
+    for logo_path in paths_to_check:
         if os.path.exists(logo_path):
             try:
                 logo_base64 = get_img_as_base64(logo_path)

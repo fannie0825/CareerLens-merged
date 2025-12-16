@@ -1,5 +1,6 @@
 """Sidebar UI component"""
 import streamlit as st
+import os
 import time
 from core.resume_parser import extract_text_from_resume, extract_profile_from_resume
 from core.semantic_search import generate_and_store_resume_embedding
@@ -14,7 +15,18 @@ def render_sidebar():
     """
     with st.sidebar:
         # Display logo image at the top
-        st.image("CareerLens_Logo.png", use_container_width=True)
+        # Try to resolve logo path relative to workspace root
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        root_dir = os.path.abspath(os.path.join(current_dir, "../../.."))
+        logo_path = os.path.join(root_dir, "CareerLens_Logo.png")
+        
+        # Check if custom logo exists
+        custom_logo = os.path.join(root_dir, "logo.png")
+        if os.path.exists(custom_logo):
+            logo_path = custom_logo
+            
+        if os.path.exists(logo_path):
+            st.image(logo_path, use_container_width=True)
         
         st.markdown("""
         <style>
