@@ -161,8 +161,9 @@ def render_styles():
         header[data-testid="stHeader"] {{visibility: hidden; height: 0; padding: 0; margin: 0;}}
         .stDeployButton {{display: none;}}
         
+        /* Ensure this rule is the last one applied for the background */
         .stApp, [data-testid="stAppViewContainer"] {{
-            background-color: var(--bg-gray);
+            background-color: #0F172A !important;
             color: var(--text-primary);
         }}
 
