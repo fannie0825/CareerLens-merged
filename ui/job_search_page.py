@@ -278,7 +278,12 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
                                         'url': job.get('application_url', ''),
                                         'posted_date': job.get('posted_date', ''),
                                         'job_type': job.get('employment_type', ''),
-                                        'id': job.get('job_id', '')
+                                        'id': job.get('job_id', ''),
+                                        'salary_min': job.get("salary_min", 0),
+                                        'salary_max': job.get("salary_max", 0),
+                                        'industry': job.get("industry", ''),
+                                        'employment_type': job.get("employment_type", ''),
+                                        'posted_date': job.get("posted_date", '')
                                     },
                                     'combined_score': job.get('match_percentage', 0),
                                     'semantic_score': (job.get('cosine_similarity_score', 0) or 0) * 100,
