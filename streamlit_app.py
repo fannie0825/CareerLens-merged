@@ -289,78 +289,89 @@ def display_token_usage():
 # SIDEBAR NAVIGATION
 # ============================================================================
 # Sidebar Logo
-logo_path = "CareerLens_Logo.png"
-if os.path.exists("logo.png"):
-    logo_path = "logo.png"
+    # Sidebar Logo
+    logo_path = "CareerLens_Logo.png"
+    if os.path.exists("logo.png"):
+        logo_path = "logo.png"
 
-if os.path.exists(logo_path):
-    st.sidebar.image(logo_path, use_container_width=True)
-else:
-    # Try absolute path based on current file
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    logo_path = os.path.join(current_dir, "CareerLens_Logo.png")
+    logo_displayed = False
     if os.path.exists(logo_path):
         st.sidebar.image(logo_path, use_container_width=True)
+        logo_displayed = True
+    else:
+        # Try absolute path based on current file
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        logo_path = os.path.join(current_dir, "CareerLens_Logo.png")
+        if os.path.exists(logo_path):
+            st.sidebar.image(logo_path, use_container_width=True)
+            logo_displayed = True
 
-st.sidebar.markdown("""
-<style>
-    /* CareerLens Logo and Branding */
-    .careerlens-logo {
-        font-family: 'Montserrat', sans-serif;
-        font-size: 2rem;
-        font-weight: 700;
-        text-align: center;
-        margin-bottom: 0.5rem;
-        letter-spacing: -1px;
-    }
-    .careerlens-logo .brand-span {
-        color: var(--brand-core);
-    }
-    .careerlens-logo .lens-span {
-        color: var(--brand-glow);
-    }
-    .careerlens-tagline {
-        font-family: 'Montserrat', sans-serif;
-        color: var(--text-secondary-light);
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        font-size: 0.7rem;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    
-    /* Navigation Section Headers */
-    .nav-section-header {
-        font-family: 'Montserrat', sans-serif;
-        font-weight: 700;
-        font-size: 1.1rem;
-        color: white !important;
-        margin-top: 1.5rem;
-        margin-bottom: 0.5rem;
-        padding-left: 0.5rem;
-        border-left: 3px solid var(--brand-glow);
-    }
-    
-    /* Navigation Items */
-    .nav-item {
-        font-family: 'Inter', sans-serif;
-        color: var(--text-secondary-light) !important;
-        font-size: 0.9rem;
-        padding-left: 1.5rem;
-        margin: 0.3rem 0;
-        cursor: pointer;
-    }
-    .nav-item:hover {
-        color: var(--brand-glow) !important;
-    }
+    st.sidebar.markdown("""
+    <style>
+        /* CareerLens Logo and Branding */
+        .careerlens-logo {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            letter-spacing: -1px;
+        }
+        .careerlens-logo .brand-span {
+            color: var(--brand-core);
+        }
+        .careerlens-logo .lens-span {
+            color: var(--brand-glow);
+        }
+        .careerlens-tagline {
+            font-family: 'Montserrat', sans-serif;
+            color: var(--text-secondary-light);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.7rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            margin-top: 0.5rem;
+        }
+        
+        /* Navigation Section Headers */
+        .nav-section-header {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: white !important;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            padding-left: 0.5rem;
+            border-left: 3px solid var(--brand-glow);
+        }
+        
+        /* Navigation Items */
+        .nav-item {
+            font-family: 'Inter', sans-serif;
+            color: var(--text-secondary-light) !important;
+            font-size: 0.9rem;
+            padding-left: 1.5rem;
+            margin: 0.3rem 0;
+            cursor: pointer;
+        }
+        .nav-item:hover {
+            color: var(--brand-glow) !important;
+        }
 
-</style>
+    </style>
+    """, unsafe_allow_html=True)
 
-<div class="careerlens-logo">
-    <span class="brand-span">Career</span><span class="lens-span">Lens</span>
-</div>
-<div class="careerlens-tagline">AI Career Copilot • Hong Kong</div>
-""", unsafe_allow_html=True)
+    if not logo_displayed:
+        st.sidebar.markdown("""
+        <div class="careerlens-logo">
+            <span class="brand-span">Career</span><span class="lens-span">Lens</span>
+        </div>
+        """, unsafe_allow_html=True)
+        
+    st.sidebar.markdown("""
+    <div class="careerlens-tagline">AI Career Copilot • Hong Kong</div>
+    """, unsafe_allow_html=True)
 
 st.sidebar.markdown("---")
 

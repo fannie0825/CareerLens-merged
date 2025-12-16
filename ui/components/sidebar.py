@@ -25,8 +25,10 @@ def render_sidebar():
         if os.path.exists(custom_logo):
             logo_path = custom_logo
             
+        logo_displayed = False
         if os.path.exists(logo_path):
             st.image(logo_path, use_container_width=True)
+            logo_displayed = True
         
         st.markdown("""
         <style>
@@ -59,13 +61,23 @@ def render_sidebar():
                 text-align: center;
             }
         </style>
-        <div style="margin-bottom: 2rem;">
-            <h2 class="sidebar-logo">
-                <span class="brand-span">Career</span><span class="lens-span">Lens</span>
-            </h2>
-            <p class="sidebar-tagline">AI Career Copilot • Hong Kong</p>
-        </div>
         """, unsafe_allow_html=True)
+        
+        if not logo_displayed:
+            st.markdown("""
+            <div style="margin-bottom: 2rem;">
+                <h2 class="sidebar-logo">
+                    <span class="brand-span">Career</span><span class="lens-span">Lens</span>
+                </h2>
+                <p class="sidebar-tagline">AI Career Copilot • Hong Kong</p>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div style="margin-bottom: 2rem;">
+                <p class="sidebar-tagline" style="margin-top: 0.5rem;">AI Career Copilot • Hong Kong</p>
+            </div>
+            """, unsafe_allow_html=True)
         
         st.markdown("---")
         st.markdown("### 1. Upload your CV to begin")

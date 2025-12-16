@@ -209,14 +209,14 @@ def main_analyzer_page():
                         # Create skill tags
                         skills_html = ""
                         for skill in skills[:10]:
-                            skills_html += f'<span style="background-color: #E8F4FD; padding: 5px 10px; margin: 3px; border-radius: 5px; display: inline-block;">{skill}</span> '
+                            skills_html += f'<span style="background-color: #E8F4FD; color: #1E293B; padding: 5px 10px; margin: 3px; border-radius: 5px; display: inline-block; font-weight: 500;">{skill}</span> '
                         st.markdown(skills_html, unsafe_allow_html=True)
 
                         if len(skills) > 10:
                             with st.expander(f"➕ Show all {len(skills)} skills"):
                                 more_skills_html = ""
                                 for skill in skills[10:]:
-                                    more_skills_html += f'<span style="background-color: #F0F0F0; padding: 5px 10px; margin: 3px; border-radius: 5px; display: inline-block;">{skill}</span> '
+                                    more_skills_html += f'<span style="background-color: #F0F0F0; color: #1E293B; padding: 5px 10px; margin: 3px; border-radius: 5px; display: inline-block; font-weight: 500;">{skill}</span> '
                                 st.markdown(more_skills_html, unsafe_allow_html=True)
                     else:
                         st.warning("⚠️ No skills detected")
