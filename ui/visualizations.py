@@ -139,7 +139,7 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
     match_fig = go.Figure()
     match_fig.add_trace(go.Bar(x=job_titles, y=sim_scores, name="Cosine Similarity"))
     match_fig.add_trace(go.Bar(x=job_titles, y=skill_scores, name="Skill Match Score"))
-    match_fig.add_trace(go.Bar(x=job_titles, y=exp_scores, name="Experience Match Score"))
+    #match_fig.add_trace(go.Bar(x=job_titles, y=exp_scores, name="Experience Match Score"))
     match_fig.add_trace(go.Bar(x=job_titles, y=match_percentages, name="Match Percentage"))
     match_fig.update_layout(barmode='group', xaxis_tickangle=-45, yaxis=dict(title="Score / Percent"))
     st.plotly_chart(match_fig, use_container_width=True)
@@ -221,10 +221,36 @@ def find_salary_expectation(job, job_seeker_data: dict) -> float:
 def match_location(job, job_seeker_data: dict) -> float:
     """Simple location match scoring"""
     job_location = job.get("location", "").lower()
-    seeker_location = job_seeker_data.get("preferred_location", "").lower()
-    if not job_location or not seeker_location:
-        return 0.0
-    return 100.0 if seeker_location in job_location or seeker_location == "Hong Kong" and job_location in ["HK", "Hong Kong"] else 30.0
+    user_location_pref = job_seeker_data.get("preferred_location", "").lower()
+    if not job_location or not user_location_pref:
+        return 50.0  # Neutral score if missing data
+    
+    job_loc_lower = job_location.lower()
+    user_loc_lower = user_location_pref.lower()
+    
+    # Exact match or contains
+    if user_loc_lower in job_loc_lower or job_loc_lower in user_loc_lower:
+        return 100.0
+    
+    # Remote work compatibility
+    if 'remote' in job_loc_lower or 'remote' in user_loc_lower:
+        return 80.0
+    
+    # Same city/region detection (simplified)
+    common_locations = {
+        'hong kong': ['hk', 'hongkong', 'hong-kong'],
+        'new york': ['ny', 'nyc', 'newyork'],
+        'london': ['ldn'],
+        'singapore': ['sg', 'sing'],
+        'tokyo': ['tyo']
+    }
+    
+    for main_loc, aliases in common_locations.items():
+        if (user_loc_lower == main_loc and any(alias in job_loc_lower for alias in aliases)) or \
+           (job_loc_lower == main_loc and any(alias in user_loc_lower for alias in aliases)):
+            return 100.0
+    
+    return 30.0  # Low score for no match
 
 def create_job_comparison_radar(matched_job: dict, job: dict, job_seeker_data: dict, chart_key: str):
     """Create radar chart for top 3 job comparisons"""
