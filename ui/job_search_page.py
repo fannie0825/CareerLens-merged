@@ -880,7 +880,7 @@ def _display_job_matches(matched_jobs: List[Dict], num_jobs_to_show: int, job_se
                         st.rerun()
 
             # Create radar chart for this job, added 15/12/2025 by Michael
-            create_job_comparison_radar(result, job, job_seeker_data, str(i)&job.get('id', ''))
+            create_job_comparison_radar(result, job, job_seeker_data, str(i)+job.get('id', ''))
 
 
 def _display_resume_generator_ui(job: Dict, user_profile: Dict, resume_text: str = ""):
