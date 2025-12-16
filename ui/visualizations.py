@@ -116,8 +116,8 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
             posting_dates.append(str(dtxt))
 
         # Skills
-        skillstr = job.get("matched_skills", "") or ""
-        missstr = job.get("missing_skills", "") or ""
+        skillstr = str(job.get("matched_skills", "")) or ""
+        missstr = str(job.get("missing_skills", "")) or ""
         skill_match_counts.append(len([x.strip() for x in skillstr.split(",") if x.strip()]))
         missing_skill_counts.append(len([x.strip() for x in missstr.split(",") if x.strip()]))
 
