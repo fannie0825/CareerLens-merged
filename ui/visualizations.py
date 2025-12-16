@@ -221,7 +221,7 @@ def find_salary_expectation(job, job_seeker_data: dict) -> float:
 def match_location(job, job_seeker_data: dict) -> float:
     """Simple location match scoring"""
     job_location = job.get("location", "").lower()
-    user_location_pref = job_seeker_data.get("preferred_location", "").lower()
+    user_location_pref = job_seeker_data.get("location_preference", "hong kong").lower() #default is hk
     if not job_location or not user_location_pref:
         return 50.0  # Neutral score if missing data
     
