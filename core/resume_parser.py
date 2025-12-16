@@ -41,6 +41,81 @@ def _get_docx_document():
     return _Document
 
 
+def _extract_docx_text_robust(docx_file) -> str:
+    """Robust extraction of text from DOCX including headers, footers, and text boxes.
+    
+    Args:
+        docx_file: File-like object containing DOCX data
+        
+    Returns:
+        Extracted text content
+    """
+    try:
+        Document = _get_docx_document()
+        from docx.oxml.ns import qn
+        
+        # Reset file position to beginning
+        docx_file.seek(0)
+        doc = Document(docx_file)
+        
+        full_text = []
+        
+        # 1. Extract text from paragraphs (Main Body)
+        for paragraph in doc.paragraphs:
+            full_text.append(paragraph.text)
+            
+        # 2. Extract text from tables (Main Body)
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    for paragraph in cell.paragraphs:
+                        full_text.append(paragraph.text)
+        
+        # 3. Extract text from Headers and Footers
+        for section in doc.sections:
+            # Headers
+            for header in [section.header, section.first_page_header, section.even_page_header]:
+                if header:
+                    for paragraph in header.paragraphs:
+                        full_text.append(paragraph.text)
+                    for table in header.tables:
+                        for row in table.rows:
+                            for cell in row.cells:
+                                for paragraph in cell.paragraphs:
+                                    full_text.append(paragraph.text)
+            
+            # Footers
+            for footer in [section.footer, section.first_page_footer, section.even_page_footer]:
+                if footer:
+                    for paragraph in footer.paragraphs:
+                        full_text.append(paragraph.text)
+                    for table in footer.tables:
+                        for row in table.rows:
+                            for cell in row.cells:
+                                for paragraph in cell.paragraphs:
+                                    full_text.append(paragraph.text)
+        
+        # 4. Extract text from Text Boxes (XML iteration)
+        # Resumes often use text boxes for sidebars or contact info
+        try:
+            for element in doc.element.body.iter():
+                if element.tag.endswith('txbxContent'):
+                    for p in element.iter(qn('w:p')):
+                        text_content = []
+                        for t in p.iter(qn('w:t')):
+                            if t.text:
+                                text_content.append(t.text)
+                        if text_content:
+                            full_text.append("".join(text_content))
+        except Exception:
+            # Gracefully fail on advanced XML extraction if structure is unexpected
+            pass
+        
+        return "\n".join([t for t in full_text if t.strip()])
+    except Exception as e:
+        raise Exception(f"Error reading DOCX: {str(e)}")
+
+
 # ============================================================================
 # RESUME PARSER
 # ============================================================================
@@ -93,28 +168,7 @@ class ResumeParser:
         Raises:
             Exception: If DOCX cannot be read
         """
-        try:
-            from docx import Document
-            # Reset file position to beginning
-            docx_file.seek(0)
-            doc = Document(docx_file)
-            
-            full_text = []
-            
-            # Extract text from paragraphs
-            for paragraph in doc.paragraphs:
-                full_text.append(paragraph.text)
-                
-            # Extract text from tables
-            for table in doc.tables:
-                for row in table.rows:
-                    for cell in row.cells:
-                        for paragraph in cell.paragraphs:
-                            full_text.append(paragraph.text)
-            
-            return "\n".join(full_text)
-        except Exception as e:
-            raise Exception(f"Error reading DOCX: {str(e)}")
+        return _extract_docx_text_robust(docx_file)
     
     def extract_text_from_txt(self, txt_file) -> str:
         """Extract text from TXT file object.
@@ -180,7 +234,7 @@ class ResumeParser:
                     f"This may happen if:\n"
                     f"• The {file_type} is scanned/image-based (try a text-based document)\n"
                     f"• The file is corrupted or password-protected\n"
-                    f"• The document is mostly empty\n"
+                    f"• The document is mostly empty or uses complex formatting (text boxes)\n"
                     f"Please try uploading a different format (PDF or DOCX with selectable text)."
                 )
             
@@ -457,7 +511,7 @@ def extract_relevant_resume_sections(resume_text: str) -> str:
         
         line_lower = line_stripped.lower()
         
-        if any(re.search(rf'\b{kw}\b', line_lower) for kw in experience_keywords):
+        if any(re.search(rf'\\b{kw}\\b', line_lower) for kw in experience_keywords):
             if not in_experience:
                 in_experience = True
                 in_education = False
@@ -466,7 +520,7 @@ def extract_relevant_resume_sections(resume_text: str) -> str:
                 current_section = line + '\n'
             continue
         
-        if any(re.search(rf'\b{kw}\b', line_lower) for kw in education_keywords):
+        if any(re.search(rf'\\b{kw}\\b', line_lower) for kw in education_keywords):
             if not in_education:
                 in_education = True
                 if current_section:
@@ -476,7 +530,7 @@ def extract_relevant_resume_sections(resume_text: str) -> str:
         
         major_sections = [r'summary', r'objective', r'skills', r'certifications', 
                          r'awards', r'publications', r'projects', r'contact', r'personal']
-        if any(re.search(rf'\b{section}\b', line_lower) for section in major_sections):
+        if any(re.search(rf'\\b{section}\\b', line_lower) for section in major_sections):
             if in_experience or in_education:
                 if current_section:
                     relevant_sections.append(current_section)
@@ -496,7 +550,7 @@ def extract_relevant_resume_sections(resume_text: str) -> str:
     
     # Fallback: look for lines with dates
     if not result or len(result) < 100:
-        date_pattern = r'\b(19|20)\d{2}\b|\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}'
+        date_pattern = r'\\b(19|20)\\d{2}\\b|\\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\\s+\\d{4}'
         result_lines = []
         for line in lines:
             if re.search(date_pattern, line, re.IGNORECASE):
@@ -878,30 +932,13 @@ def extract_text_from_resume(uploaded_file) -> Optional[str]:
             return text
         
         elif file_type == 'docx':
-            Document = _get_docx_document()
-            uploaded_file.seek(0)
-            doc = Document(uploaded_file)
-            
-            full_text = []
-            
-            # Extract text from paragraphs
-            for paragraph in doc.paragraphs:
-                full_text.append(paragraph.text)
-                
-            # Extract text from tables
-            for table in doc.tables:
-                for row in table.rows:
-                    for cell in row.cells:
-                        for paragraph in cell.paragraphs:
-                            full_text.append(paragraph.text)
-            
-            text = "\n".join(full_text)
+            text = _extract_docx_text_robust(uploaded_file)
             
             # Check if we got any text
             if not text or len(text.strip()) < 20:
                 st.warning(
                     "⚠️ Could not extract sufficient text from DOCX. "
-                    "The document may be mostly empty or use non-standard formatting."
+                    "The document may be mostly empty, use non-standard formatting (like text boxes), or be scanned."
                 )
                 return None
             return text
