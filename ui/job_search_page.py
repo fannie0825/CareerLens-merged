@@ -491,6 +491,54 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
         if MODULES_AVAILABLE:
             display_market_positioning_profile(matched_jobs, job_seeker_data)
         
+        current_job_seeker_id = st.session_state.get('job_seeker_id')
+    
+        if current_job_seeker_id:
+            try:
+                from database.job_post_api_db import MatchedJobsDB
+                matched_db = MatchedJobsDB()
+                cache_info = matched_db.get_recent_match_info(current_job_seeker_id, max_age_hours=24)
+                
+                if cache_info and cache_info.get('count', 0) > 0:
+                    cached_matches = matched_db.get_matched_jobs(
+                                current_job_seeker_id, 
+                                min_match=0, 
+                                purpose='general',
+                                limit=50
+                            )
+
+                    if cached_matches:
+                                # Convert DB format to display format
+                        processed_matches = []
+                        for job in cached_matches:
+                            processed_matches.append({
+                                        'job': {
+                                            'title': job.get('job_title', ''),
+                                            'company': job.get('company_name', ''),
+                                            'location': job.get('location', ''),
+                                            'description': job.get('job_description', ''),
+                                            'skills': [s.strip() for s in job.get('required_skills', '').split(',') if s.strip()],
+                                            'url': job.get('application_url', ''),
+                                            'posted_date': job.get('posted_date', ''),
+                                            'job_type': job.get('employment_type', ''),
+                                            'id': job.get('job_id', ''),
+                                            'salary_min': job.get("salary_min", 0),
+                                            'salary_max': job.get("salary_max", 0),
+                                            'industry': job.get("industry", ''),
+                                            'employment_type': job.get("employment_type", ''),
+                                            'posted_date': job.get("posted_date", '')
+                                        },
+                                        'combined_score': job.get('match_percentage', 0),
+                                        'semantic_score': (job.get('cosine_similarity_score', 0) or 0) * 100,
+                                        'skill_match_percentage': (job.get('skill_match_score', 0) or 0) * 100,
+                                        'matched_skills': [s.strip() for s in job.get('matched_skills', '').split(',') if s.strip()],
+                                        'missing_skills': [s.strip() for s in job.get('missing_skills', '').split(',') if s.strip()],
+                        })
+            except Exception as e:
+                # Silently continue if cache check fails
+                print(f"Cache check failed: {e}")
+                pass
+
         # Create enhanced visualizations
         create_enhanced_visualizations(processed_matches, job_seeker_data)
         
