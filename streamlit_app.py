@@ -75,6 +75,10 @@ try:
         ProgressTracker
     )
     from ui.components.styles import render_styles
+    
+    # Inject global styles immediately
+    render_styles()
+
     from ui import (
         # Page modules
         main_analyzer_page,

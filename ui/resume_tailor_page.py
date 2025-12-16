@@ -66,8 +66,8 @@ def tailored_resume_page():
         return
     
     try:
-        # Render CSS styles
-        render_styles()
+        # Render CSS styles (Handled globally in streamlit_app.py)
+        # render_styles()
         
         st.markdown('<h1 class="main-header">📝 AI-powered Tailored Resume</h1>', unsafe_allow_html=True)
         
