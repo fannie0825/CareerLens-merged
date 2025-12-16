@@ -143,7 +143,7 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
     match_fig.add_trace(go.Bar(x=job_titles, y=match_percentages, name="Match Percentage"))
     match_fig.update_layout(barmode='group', xaxis_tickangle=-45, yaxis=dict(title="Score / Percent"))
     st.plotly_chart(match_fig, use_container_width=True)
-
+"""
     # 2. Salary Distribution
     st.subheader("Average Salary per Job")
     if any(s is not None for s in avg_salaries):
@@ -151,7 +151,7 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
         salary_fig = go.Figure([go.Bar(x=job_titles, y=base_salary, text=salary_labels, textposition='auto')])
         salary_fig.update_layout(xaxis_tickangle=-45, yaxis_title="Average Salary")
         st.plotly_chart(salary_fig, use_container_width=True)
-
+"""
     # 4. Employment Type Frequencies
     st.subheader("Employment Type Frequencies")
     etypes = [e for e in employment_types if e and e != "N/A"]
