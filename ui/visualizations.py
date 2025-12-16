@@ -5,7 +5,7 @@ Contains enhanced visualization functions for displaying job match analytics,
 skill distributions, and comparative charts.
 """
 
-import streamlit as st
+import streamlit as st # pyright: ignore[reportMissingImports]
 from collections import Counter
 import datetime
 from typing import Dict, List
@@ -54,7 +54,7 @@ def _get_numpy():
 
 
 
-import streamlit as st
+import streamlit as st # pyright: ignore[reportMissingImports]
 import plotly.graph_objs as go
 from collections import Counter
 
@@ -76,13 +76,14 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
     skill_match_counts = []
     missing_skill_counts = []
 
-    for job in matched_jobs:
+    for j in matched_jobs:
+        job = j.get("job", {})
         label = f"{job.get('job_title', 'N/A')} @ {job.get('company_name', '')}"
         job_titles.append(label)
-        sim_scores.append(job.get("cosine_similarity_score", 0))
-        skill_scores.append(job.get("skill_match_score", 0))
-        exp_scores.append(job.get("experience_match_score", 0))
-        match_percentages.append(job.get("match_percentage", 0))
+        sim_scores.append(j.get("cosine_similarity_score", 0))
+        skill_scores.append(j.get("skill_match_score", 0))
+        exp_scores.append(j.get("experience_match_score", 0))
+        match_percentages.append(j.get("match_percentage", 0))
 
         # Salary
         sal_min = job.get("salary_min")
@@ -116,7 +117,7 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
             posting_dates.append(str(dtxt))
 
         # Skills
-        skill_val = job.get("matched_skills")
+        skill_val = j.get("matched_skills")
         if isinstance(skill_val, list):
             skill_match_counts.append(len(skill_val))
         elif isinstance(skill_val, str):
@@ -124,7 +125,7 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
         else:
             skill_match_counts.append(0)
 
-        miss_val = job.get("missing_skills")
+        miss_val = j.get("missing_skills")
         if isinstance(miss_val, list):
             missing_skill_counts.append(len(miss_val))
         elif isinstance(miss_val, str):
@@ -188,8 +189,54 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
     skills_fig.update_layout(barmode='group', xaxis_tickangle=-45, yaxis_title='Skill Count')
     st.plotly_chart(skills_fig, use_container_width=True)
 
+# Estimate salary expectation from job seeker data
+def find_salary_expectation(job, job_seeker_data: dict) -> float:
+    import re
+    """Estimate job seeker's salary expectation based on profile data"""
+    text = job_seeker_data.get("salary_expectation")
+    if not text or not isinstance(text, str):
+        return 0
+    
+    # Convert 'k' notation to thousands
+    text = re.sub(r'(\d+(?:\.\d+)?)\s*k', 
+                  lambda m: str(int(float(m.group(1)) * 1000)), 
+                  text, flags=re.IGNORECASE)
+    
+    # Find all numbers (with or without commas)
+    numbers = re.findall(r'\d[\d,]*\.?\d*', text)
+    
+    # Convert to integers (remove commas, handle decimals)
+    result = []
+    for num in numbers:
+        try:
+            # Remove commas and convert to integer
+            clean_num = num.replace(',', '')
+            if '.' in clean_num:
+                # Handle decimals by rounding
+                value = int(float(clean_num))
+            else:
+                value = int(clean_num)
+            result.append(value)
+        except ValueError:
+            continue
+    
+    seeker_expectation = (sum(result) / len(result)) if result else 0
 
-def create_job_comparison_radar(matched_jobs: list[dict]):
+    hunter_min = job.get("salary_min", 0)
+    hunter_max = job.get("salary_max", 0)
+    hunter_avg = (hunter_min + hunter_max) / 2 if hunter_min and hunter_max else max(hunter_min, hunter_max)
+
+    return max(1, hunter_avg / seeker_expectation) if seeker_expectation else 0
+
+def match_location(job, job_seeker_data: dict) -> float:
+    """Simple location match scoring"""
+    job_location = job.get("location", "").lower()
+    seeker_location = job_seeker_data.get("preferred_location", "").lower()
+    if not job_location or not seeker_location:
+        return 0.0
+    return 100.0 if seeker_location in job_location or seeker_location == "Hong Kong" and job_location in ["HK", "Hong Kong"] else 0.0
+
+def create_job_comparison_radar(matched_job: dict, job: dict, job_seeker_data: dict):
     """Create radar chart for top 3 job comparisons"""
     
     # Lazy load plotly only when radar chart is created
@@ -203,22 +250,21 @@ def create_job_comparison_radar(matched_jobs: list[dict]):
         
         # Calculate scores for each category (simplified for demo)
         job_scores = []
-        for job in matched_jobs[:1]:
-            scores = [
-                job.get('skill_match_percentage', 0),
-                job.get('semantic_score', 0),
-                job.get('combined_score', 0),  # Simulated experience fit
-                75,  # Simulated location match
-                70   # Simulated salary alignment
-            ]
-            job_scores.append(scores)
+        scores = [
+                matched_job.get('skill_match_percentage', 0),
+                matched_job.get('semantic_score', 0),
+                matched_job.get('combined_score', 0), 
+                match_location(job, job_seeker_data),  # Simulated location match
+                find_salary_expectation(job, job_seeker_data)
+        ]
+        job_scores.append(scores)
         
         fig = go.Figure()
 
         colors = ['#FF6B6B', '#4ECDC4', '#45B7D1']
         
         for i, scores in enumerate(job_scores):
-            job_title = matched_jobs[i].get('title', f'Job {i+1}')[:25]
+            job_title = matched_job.get('title', f'Job {i+1}')[:25]
             fig.add_trace(go.Scatterpolar(
                 r=scores + [scores[0]],  # Close the radar
                 theta=categories + [categories[0]],

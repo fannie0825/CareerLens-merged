@@ -277,7 +277,12 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
                                         'url': job.get('application_url', ''),
                                         'posted_date': job.get('posted_date', ''),
                                         'job_type': job.get('employment_type', ''),
-                                        'id': job.get('job_id', '')
+                                        'id': job.get('job_id', ''),
+                                        'salary_min': job.get("salary_min", 0),
+                                        'salary_max': job.get("salary_max", 0),
+                                        'industry': job.get("industry", ''),
+                                        'employment_type': job.get("employment_type", ''),
+                                        'posted_date': job.get("posted_date", ''),
                                     },
                                     'combined_score': job.get('match_percentage', 0),
                                     'semantic_score': (job.get('cosine_similarity_score', 0) or 0) * 100,
@@ -826,7 +831,7 @@ def _display_job_matches(matched_jobs: List[Dict], num_jobs_to_show: int, job_se
                         st.rerun()
 
             # Create radar chart for this job, added 15/12/2025 by Michael
-            create_job_comparison_radar([result])
+            create_job_comparison_radar(result, job, job_seeker_data)
 
 
 def _display_resume_generator_ui(job: Dict, user_profile: Dict, resume_text: str = ""):
