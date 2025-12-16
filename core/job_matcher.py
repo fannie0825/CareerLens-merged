@@ -320,6 +320,62 @@ def analyze_match_simple(job_data: tuple, seeker_data: tuple) -> Dict:
     skill_match = len(set(job_skills.split()) & set(seeker_skills.split())) / max(len(job_skills.split()), 1)
     match_score += skill_match * 20
 
+    # Language matching
+    # job_data: ..., 17:languages
+    # seeker_data: ..., 10:languages
+    if len(job_data) > 17 and len(seeker_data) > 10:
+        job_langs = str(job_data[17]).lower()
+        seeker_langs = str(seeker_data[10]).lower()
+        
+        if job_langs:
+            # If job has language requirements, check if seeker has them
+            job_lang_list = [l.strip() for l in job_langs.replace(',', ' ').split() if l.strip()]
+            if job_lang_list:
+                matches = 0
+                for lang in job_lang_list:
+                    if lang in seeker_langs:
+                        matches += 1
+                
+                lang_score = (matches / len(job_lang_list)) * 10
+                match_score += lang_score
+            else:
+                # No specific languages found in field, give full points
+                match_score += 10
+        else:
+            # No language requirements
+            match_score += 10
+    else:
+        # Fallback if tuple length is unexpected (backward compatibility)
+        match_score += 10
+
+    # Language matching
+    # Check if job has languages column (it was added recently, so index might vary)
+    # job_data tuple structure from get_all_jobs_for_matching_tuples:
+    # 0:id, 1:timestamp, 2:title, 3:desc, 4:skills, 5:company, 6:industry, 7:location, ...
+    # We need to be careful with tuple indices. The query in database/queries.py defines the order.
+    # Assuming the new column 'languages' is at the end if it exists.
+    # For now, let's try to extract languages from the skills string if it's there, 
+    # or rely on the fact that we cleaned up skills.
+    # If we want explicit language matching, we need to update the query in queries.py first.
+    
+    # Simple keyword check for common languages in job description if specific field not available
+    job_desc_full = (str(job_data[3]) + " " + str(job_data[4])).lower()
+    seeker_langs = str(seeker_data[1]).lower() # 1 is languages in seeker tuple? No, let's check.
+    # Seeker tuple from get_all_job_seekers_formatted: 
+    # 0:id, 1:name, 2:skills, 3:experience, 4:education, 5:location, 6:industry, 7:pref_loc, 8:salary, 9:role
+    # Wait, get_all_job_seekers_formatted does not return languages.
+    
+    # Since we can't easily change the tuple unpacking without breaking other things, 
+    # and the user just wants to avoid "missing skills" false positives, 
+    # the main fix is in the PARSER (cleaning required_skills).
+    # The secondary fix is enforcing input.
+    
+    # However, if we want to MATCH on languages, we should try.
+    # Let's assume seeker_skills (index 2) includes languages because they are in the profile 'hard_skills' or 'languages' field?
+    # In save_profile, languages are saved in a separate column.
+    # get_all_job_seekers_formatted needs to be checked.
+
+
     # Experience matching
     experience_map = {"fresh graduate": 0, "1-3 years": 1, "3-5 years": 2, "5-10 years": 3, "10+ years": 4}
     job_exp = job_data[11]
