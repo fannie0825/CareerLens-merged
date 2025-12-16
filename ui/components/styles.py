@@ -174,7 +174,7 @@ def render_styles():
         .stDeployButton {{display: none;}}
         
         /* Ensure this rule is the last one applied for the background */
-        .stApp, [data-testid="stAppViewContainer"] {{
+        html, body, .stApp, [data-testid="stAppViewContainer"], .main {{
             background-color: #0F172A !important;
             color: var(--text-primary);
         }}

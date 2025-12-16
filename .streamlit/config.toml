@@ -63,8 +63,13 @@ fastReruns = true
 enforceSerializableSessionState = false
 
 [theme]
-# Use default theme for consistent appearance
-base = "light"
+# Force Dark Navy Theme
+base = "dark"
+primaryColor = "#00D2FF"
+backgroundColor = "#0F172A"
+secondaryBackgroundColor = "#1E293B"
+textColor = "#FFFFFF"
+font = "sans serif"
 
 [logger]
 # Reduce log level to minimize I/O operations
