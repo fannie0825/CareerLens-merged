@@ -295,13 +295,23 @@ def display_token_usage():
         logo_path = "logo.png"
 
     logo_displayed = False
-    if os.path.exists(logo_path):
-        st.sidebar.image(logo_path, use_container_width=True)
-        logo_displayed = True
-    else:
-        # Try absolute path based on current file
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        logo_path = os.path.join(current_dir, "CareerLens_Logo.png")
+    
+    # Robust image loading
+    try:
+        from PIL import Image
+        
+        # Try finding the logo
+        if not os.path.exists(logo_path):
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            logo_path = os.path.join(current_dir, "CareerLens_Logo.png")
+            
+        if os.path.exists(logo_path):
+            # Open with PIL to ensure it's loaded correctly
+            image = Image.open(logo_path)
+            st.sidebar.image(image, use_container_width=True)
+            logo_displayed = True
+    except Exception as e:
+        # Fallback to simple path if PIL fails
         if os.path.exists(logo_path):
             st.sidebar.image(logo_path, use_container_width=True)
             logo_displayed = True

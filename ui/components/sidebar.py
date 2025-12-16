@@ -26,9 +26,16 @@ def render_sidebar():
             logo_path = custom_logo
             
         logo_displayed = False
-        if os.path.exists(logo_path):
-            st.image(logo_path, use_container_width=True)
-            logo_displayed = True
+        try:
+            from PIL import Image
+            if os.path.exists(logo_path):
+                image = Image.open(logo_path)
+                st.image(image, use_container_width=True)
+                logo_displayed = True
+        except Exception:
+            if os.path.exists(logo_path):
+                st.image(logo_path, use_container_width=True)
+                logo_displayed = True
         
         st.markdown("""
         <style>
