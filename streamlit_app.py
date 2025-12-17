@@ -288,42 +288,6 @@ def display_token_usage():
 # ============================================================================
 # SIDEBAR NAVIGATION
 # ============================================================================
-# Sidebar Logo
-    # Sidebar Logo
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    logo_path = os.path.join(current_dir, "CareerLens_Logo.png")
-    
-    # Check for custom logo override
-    custom_logo_path = os.path.join(current_dir, "logo.png")
-    if os.path.exists(custom_logo_path):
-        logo_path = custom_logo_path
-
-    logo_displayed = False
-    
-    # Robust image loading using Base64 to prevent disappearance
-    # This embeds the image directly in the HTML, bypassing filesystem/serving issues
-    if os.path.exists(logo_path):
-        try:
-            import base64
-            with open(logo_path, "rb") as f:
-                data = f.read()
-                logo_base64 = base64.b64encode(data).decode()
-            
-            st.sidebar.markdown(
-                f'<img src="data:image/png;base64,{logo_base64}" style="width: 100%; max-width: 100%; margin-bottom: 20px;">',
-                unsafe_allow_html=True
-            )
-            logo_displayed = True
-        except Exception as e:
-            # Fallback to standard Streamlit image if base64 fails
-            print(f"DEBUG: Logo base64 loading failed: {e}")
-            try:
-                st.sidebar.image(logo_path, use_column_width=True)
-                logo_displayed = True
-            except Exception as e2:
-                print(f"DEBUG: Logo fallback failed: {e2}")
-                pass
-
     st.sidebar.markdown("""
     <style>
         /* CareerLens Logo and Branding */
@@ -380,6 +344,41 @@ def display_token_usage():
     </style>
     """, unsafe_allow_html=True)
 
+    # Sidebar Logo
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    logo_path = os.path.join(current_dir, "CareerLens_Logo.png")
+    
+    # Check for custom logo override
+    custom_logo_path = os.path.join(current_dir, "logo.png")
+    if os.path.exists(custom_logo_path):
+        logo_path = custom_logo_path
+
+    logo_displayed = False
+    
+    # Robust image loading using Base64 to prevent disappearance
+    # This embeds the image directly in the HTML, bypassing filesystem/serving issues
+    if os.path.exists(logo_path):
+        try:
+            import base64
+            with open(logo_path, "rb") as f:
+                data = f.read()
+                logo_base64 = base64.b64encode(data).decode()
+            
+            st.sidebar.markdown(
+                f'<img src="data:image/png;base64,{logo_base64}" style="width: 100%; max-width: 100%; margin-bottom: 20px;">',
+                unsafe_allow_html=True
+            )
+            logo_displayed = True
+        except Exception as e:
+            # Fallback to standard Streamlit image if base64 fails
+            print(f"DEBUG: Logo base64 loading failed: {e}")
+            try:
+                st.sidebar.image(logo_path, use_column_width=True)
+                logo_displayed = True
+            except Exception as e2:
+                print(f"DEBUG: Logo fallback failed: {e2}")
+                pass
+
     if not logo_displayed:
         st.sidebar.markdown("""
         <div class="careerlens-logo">
@@ -391,7 +390,7 @@ def display_token_usage():
     <div class="careerlens-tagline">AI Career Copilot • Hong Kong</div>
     """, unsafe_allow_html=True)
 
-st.sidebar.markdown("---")
+    st.sidebar.markdown("---")
 
 # Job Seeker Section
 st.sidebar.markdown('<div class="nav-section-header" style="color: black !important;">👤 Job Seeker</div>', unsafe_allow_html=True)
@@ -454,11 +453,6 @@ with st.sidebar:
     current_id = st.session_state.get('job_seeker_id')
     if current_id:
         st.info(f"Current Session ID: **{current_id}**")
-
-
-# ============================================================================
-# PAGE ROUTING
-# ============================================================================
 if not MODULES_AVAILABLE:
     st.error("❌ Page modules not available. Please ensure the modules/ui/pages directory is properly installed.")
     st.info("Falling back to basic functionality...")

@@ -96,66 +96,6 @@ def render_sidebar():
             """, unsafe_allow_html=True)
         
         st.markdown("---")
-        st.markdown("### 1. Upload your CV to begin")
-        uploaded_file = st.file_uploader(
-            "Upload your resume",
-            type=['pdf', 'docx'],
-            help="We parse your skills and experience to benchmark you against the market.",
-            key="careerlens_resume_upload",
-            label_visibility="collapsed"
-        )
-        
-        if uploaded_file is not None:
-            file_key = f"{uploaded_file.name}_{uploaded_file.size}"
-            current_cached_key = st.session_state.get('_last_uploaded_file_key')
-            
-            if current_cached_key != file_key:
-                progress_bar = st.progress(0, text="📖 Reading resume...")
-                resume_text = extract_text_from_resume(uploaded_file)
-                
-                if resume_text:
-                    progress_bar.progress(30, text="✅ Resume read successfully")
-                    st.session_state.resume_text = resume_text
-                    st.session_state._last_uploaded_file_key = file_key
-                    
-                    progress_bar.progress(40, text="🤖 Extracting profile with AI...")
-                    profile_data = extract_profile_from_resume(resume_text)
-                    
-                    if profile_data:
-                        progress_bar.progress(80, text="📊 Finalizing profile...")
-                        st.session_state.user_profile = {
-                            'name': profile_data.get('name', ''),
-                            'email': profile_data.get('email', ''),
-                            'phone': profile_data.get('phone', ''),
-                            'location': profile_data.get('location', ''),
-                            'linkedin': profile_data.get('linkedin', ''),
-                            'portfolio': profile_data.get('portfolio', ''),
-                            'summary': profile_data.get('summary', ''),
-                            'experience': profile_data.get('experience', ''),
-                            'education': profile_data.get('education', ''),
-                            'skills': profile_data.get('skills', ''),
-                            'hard_skills': profile_data.get('skills', ''),  # Alias for compatibility
-                            'certifications': profile_data.get('certifications', '')
-                        }
-                        
-                        progress_bar.progress(90, text="🔗 Creating search embedding...")
-                        generate_and_store_resume_embedding(resume_text, st.session_state.user_profile)
-                        
-                        progress_bar.progress(100, text="✅ Profile ready!")
-                        time.sleep(0.3)
-                        progress_bar.empty()
-                        st.success("✅ Profile extracted!")
-                    else:
-                        progress_bar.empty()
-                        st.warning("⚠️ Could not extract profile. Please try again.")
-                else:
-                    progress_bar.empty()
-                    st.error("❌ Could not read the resume file.")
-            else:
-                if st.session_state.user_profile.get('name'):
-                    st.success(f"✅ Using profile for: {st.session_state.user_profile.get('name', 'Unknown')}")
-        
-        st.markdown("---")
         
         # Display skill matching explanation
         display_skill_matching_matrix(st.session_state.user_profile)
