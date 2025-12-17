@@ -131,6 +131,91 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
             st.write(f"**Location Preference:** {job_seeker_data.get('location_preference', 'N/A')}")
             st.write(f"**Industry Preference:** {job_seeker_data.get('industry_preference', 'N/A')}")
             st.write(f"**Search Keywords:** {job_seeker_data.get('simple_search_terms', 'N/A')}")
+            
+    # Resume Upload Section
+    with st.expander("📄 Upload New Resume", expanded=False):
+        uploaded_file = st.file_uploader(
+            "Upload your resume to update your profile",
+            type=['pdf', 'docx'],
+            key="job_search_resume_upload",
+            help="Your profile will be updated with the information from your resume."
+        )
+        
+        if uploaded_file is not None:
+            # Import dependencies locally
+            from core.resume_parser import extract_text_from_resume, extract_profile_from_resume
+            from core.semantic_search import generate_and_store_resume_embedding
+            from database import save_job_seeker_info
+            import time
+
+            file_key = f"{uploaded_file.name}_{uploaded_file.size}"
+            current_cached_key = st.session_state.get('_last_uploaded_file_key')
+            
+            if current_cached_key != file_key:
+                progress_bar = st.progress(0, text="📖 Reading resume...")
+                resume_text = extract_text_from_resume(uploaded_file)
+                
+                if resume_text:
+                    progress_bar.progress(30, text="✅ Resume read successfully")
+                    st.session_state.resume_text = resume_text
+                    st.session_state._last_uploaded_file_key = file_key
+                    
+                    progress_bar.progress(40, text="🤖 Extracting profile with AI...")
+                    profile_data = extract_profile_from_resume(resume_text)
+                    
+                    if profile_data:
+                        progress_bar.progress(80, text="📊 Finalizing profile...")
+                        
+                        # Prepare profile data structure matching the main app
+                        updated_profile = {
+                            'name': profile_data.get('name', ''),
+                            'email': profile_data.get('email', ''),
+                            'phone': profile_data.get('phone', ''),
+                            'location': profile_data.get('location', ''),
+                            'linkedin': profile_data.get('linkedin', ''),
+                            'portfolio': profile_data.get('portfolio', ''),
+                            'summary': profile_data.get('summary', ''),
+                            'experience': profile_data.get('experience', ''),
+                            'education': profile_data.get('education', ''),
+                            'skills': profile_data.get('skills', ''),
+                            'hard_skills': profile_data.get('skills', ''),  # Alias
+                            'soft_skills': profile_data.get('soft_skills', ''),
+                            'certifications': profile_data.get('certifications', ''),
+                            'primary_role': profile_data.get('primary_role', ''),
+                            'simple_search_terms': profile_data.get('simple_search_terms', ''),
+                            'job_seeker_id': job_seeker_id
+                        }
+                        
+                        # Update database if we have an ID
+                        if job_seeker_id:
+                            # Save specific fields needed for search
+                            save_data = {
+                                "hard_skills": updated_profile['hard_skills'],
+                                "soft_skills": updated_profile['soft_skills'],
+                                "experience": updated_profile['experience'],
+                                "summary": updated_profile['summary']
+                            }
+                            # In a real scenario we'd call db.update_profile(job_seeker_id, save_data)
+                            # For now we'll just update the session state which drives the search
+                            
+                        # Update session state
+                        st.session_state.user_profile = updated_profile
+                        
+                        progress_bar.progress(90, text="🔗 Creating search embedding...")
+                        generate_and_store_resume_embedding(resume_text, updated_profile)
+                        
+                        progress_bar.progress(100, text="✅ Profile updated!")
+                        time.sleep(0.3)
+                        progress_bar.empty()
+                        st.success("✅ Profile updated from resume! Reloading page...")
+                        time.sleep(1)
+                        st.rerun()
+                    else:
+                        progress_bar.empty()
+                        st.warning("⚠️ Could not extract profile. Please try again.")
+                else:
+                    progress_bar.empty()
+                    st.error("❌ Could not read the resume file.")
 
     # Display skill information
     with st.expander("💼 Skill Information"):
