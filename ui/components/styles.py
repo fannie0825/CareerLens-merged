@@ -25,31 +25,15 @@ def _load_logo():
         return _logo_html
     
     _logo_loaded = True
-    from utils.helpers import get_img_as_base64
-    
-    logo_names = ["logo.png", "CareerLens_Logo.png"]
-    
-    # Resolve potential paths
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    root_dir = os.path.abspath(os.path.join(current_dir, "../.."))
-    
-    paths_to_check = []
-    for name in logo_names:
-        # Check CWD first
-        paths_to_check.append(name)
-        # Check root directory
-        paths_to_check.append(os.path.join(root_dir, name))
-        
-    for logo_path in paths_to_check:
-        if os.path.exists(logo_path):
-            try:
-                logo_base64 = get_img_as_base64(logo_path)
-                _logo_html = f'<img src="data:image/png;base64,{logo_base64}" class="hero-bg-logo">'
-                return _logo_html
-            except (IOError, OSError) as e:
-                # Failed to load logo file - log and continue to next logo
-                logger.warning(f"Failed to load logo file {logo_path}: {e}")
-                continue
+    try:
+        from ui.utils import get_logo_base64
+        logo_base64 = get_logo_base64()
+        if logo_base64:
+            _logo_html = f'<img src="data:image/png;base64,{logo_base64}" class="hero-bg-logo">'
+            return _logo_html
+    except Exception as e:
+        # Non-fatal: fall back to CSS-only logo
+        logger.warning(f"Failed to load logo base64: {e}")
     
     # No logo files found or all failed to load - use CSS-only fallback
     _logo_html = f'<div class="hero-bg-logo hero-bg-logo-text"><span class="hero-logo-initials">{LOGO_INITIALS}</span></div>'
