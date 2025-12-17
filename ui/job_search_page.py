@@ -35,7 +35,12 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
         from utils.helpers import ProgressTracker, _websocket_keepalive
         from core.semantic_search import SemanticJobSearch, fetch_jobs_with_cache
         from utils import get_embedding_generator, get_job_scraper
-        from utils.config import _determine_index_limit
+        from utils.config import (
+            _determine_index_limit,
+            JOB_SEARCH_MODE_OPTIONS,
+            get_num_jobs_to_search,
+            get_search_time_estimate,
+        )
         from ui.components.dashboard import calculate_match_scores
         MODULES_AVAILABLE = True
     except ImportError:
@@ -257,7 +262,7 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
             options=domain_options,
             default=st.session_state.get("target_domains", []),
             key="job_search_target_domains",
-            help="Optional: use this to bias search and post-filter results.",
+            help="Optional: post-filter fetched jobs by domain keywords.",
         )
         st.session_state.target_domains = target_domains
 
@@ -268,7 +273,7 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
             value=int(st.session_state.get("salary_expectation", 0) or 0),
             step=5000,
             key="job_search_salary_expectation",
-            help="Set to 0 to disable salary filtering.",
+            help="Set to 0 to disable. Salary is extracted from job text; roles without salary info may still appear.",
         )
         st.session_state.salary_expectation = salary_expectation
 
@@ -309,9 +314,10 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
 
         employment_types = st.multiselect(
             "Employment Type",
-            ["FULLTIME", "PARTTIME", "CONTRACTOR"],
+            ["FULLTIME"],
             default=["FULLTIME"],
             key="job_search_employment_types",
+            help="Currently, only Full-time roles are supported for live fetching.",
         )
 
         # ----------------------------------------
@@ -321,20 +327,15 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
 
         search_mode = st.radio(
             "Choose search speed:",
-            ["⚡ Quick Search (15 jobs)", "🔍 Standard Search (25 jobs)", "🔬 Deep Search (40 jobs)"],
+            JOB_SEARCH_MODE_OPTIONS,
             index=0,
             horizontal=True,
             help="Quick = faster results, Deep = more comprehensive but slower",
             key="job_search_speed",
         )
 
-        # Map search mode to job count
-        search_mode_map = {
-            "⚡ Quick Search (15 jobs)": 15,
-            "🔍 Standard Search (25 jobs)": 25,
-            "🔬 Deep Search (40 jobs)": 40,
-        }
-        num_jobs_to_search = search_mode_map.get(search_mode, 15)
+        # Map search mode to job count (shared mapping in utils.config)
+        num_jobs_to_search = get_num_jobs_to_search(search_mode, default=15)
 
         col1, col2 = st.columns(2)
         with col1:
@@ -344,13 +345,7 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
                 key="jobs_show_slider",
             )
         with col2:
-            # Show estimated time based on search mode
-            time_estimates = {
-                "⚡ Quick Search (15 jobs)": "~30-60 seconds",
-                "🔍 Standard Search (25 jobs)": "~60-90 seconds",
-                "🔬 Deep Search (40 jobs)": "~90-120 seconds",
-            }
-            st.info(f"⏱️ Estimated time: {time_estimates.get(search_mode, '~60 seconds')}")
+            st.info(f"⏱️ Estimated time: {get_search_time_estimate(search_mode)}")
 
     # -------------------------------------------------------
     # 🔎 STEP 0: Check for Cached Matches (Optimization)
@@ -447,11 +442,6 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
                     search_keywords = search_query if search_query.strip() else job_seeker_data.get("primary_role", "")
                     if not search_keywords:
                         search_keywords = job_seeker_data.get("simple_search_terms", "Hong Kong jobs")
-
-                    # If the user selected domains, bias the upstream fetch keywords too.
-                    selected_domains = st.session_state.get("target_domains", [])
-                    if selected_domains:
-                        search_keywords = f"{search_keywords} {' '.join(selected_domains)}"
                     
                     location_preference = location if location else job_seeker_data.get("location_preference", "Hong Kong")
                     

@@ -6,7 +6,12 @@ from core.salary_analyzer import SalaryAnalyzer, calculate_salary_band, filter_j
 from core.domain_filter import DomainFilter, filter_jobs_by_domains
 from core.semantic_search import SemanticJobSearch, fetch_jobs_with_cache, generate_and_store_resume_embedding
 from utils import get_embedding_generator, get_job_scraper, get_text_generator
-from utils.config import _determine_index_limit
+from utils.config import (
+    _determine_index_limit,
+    JOB_SEARCH_MODE_OPTIONS,
+    get_num_jobs_to_search,
+    get_search_time_estimate,
+)
 
 
 def calculate_match_scores(jobs, user_skills_str):
@@ -347,6 +352,18 @@ def display_refine_results_section(matched_jobs, user_profile):
                 key="refine_salary"
             )
         
+        st.markdown("##### ⚡ Search Mode")
+        search_mode = st.radio(
+            "Choose search speed:",
+            JOB_SEARCH_MODE_OPTIONS,
+            index=0,
+            horizontal=True,
+            help="Quick = faster results, Deep = more comprehensive but slower",
+            key="job_search_speed",
+        )
+        st.info(f"⏱️ Estimated time: {get_search_time_estimate(search_mode)}")
+        num_jobs_to_search = get_num_jobs_to_search(search_mode, default=25)
+        
         force_refresh = st.checkbox(
             "Force new API fetch",
             value=False,
@@ -382,7 +399,7 @@ def display_refine_results_section(matched_jobs, user_profile):
                     scraper,
                     search_query,
                     location="Hong Kong",
-                    max_rows=25,
+                    max_rows=num_jobs_to_search,
                     job_type="fulltime",
                     country="hk",
                     force_refresh=force_refresh
