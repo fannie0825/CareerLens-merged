@@ -159,25 +159,3 @@ def render_sidebar():
         
         # Display skill matching explanation
         display_skill_matching_matrix(st.session_state.user_profile)
-        
-        # Session Management
-        if st.session_state.get('job_seeker_id'):
-            st.markdown("---")
-            st.caption("Session Management")
-            current_id = st.session_state.get('job_seeker_id')
-            st.info(f"Current Session ID: **{current_id}**")
-            
-            if st.button("🔄 Reset Session", key="sidebar_reset_btn", use_container_width=True, help="Clear current session and start over"):
-                # Clear specific session state keys
-                keys_to_clear = [
-                    'job_seeker_id', 'user_profile', 'resume_text', 
-                    'matched_jobs', 'autofill_data', 'analysis_complete',
-                    'ai_analysis', 'generated_resume'
-                ]
-                for key in keys_to_clear:
-                    if key in st.session_state:
-                        del st.session_state[key]
-                
-                st.success("Session reset!")
-                time.sleep(1)
-                st.rerun()
