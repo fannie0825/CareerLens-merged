@@ -290,31 +290,37 @@ def display_token_usage():
 # ============================================================================
 # Sidebar Logo
     # Sidebar Logo
-    logo_path = "CareerLens_Logo.png"
-    if os.path.exists("logo.png"):
-        logo_path = "logo.png"
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    logo_path = os.path.join(current_dir, "CareerLens_Logo.png")
+    
+    # Check for custom logo override
+    custom_logo_path = os.path.join(current_dir, "logo.png")
+    if os.path.exists(custom_logo_path):
+        logo_path = custom_logo_path
 
     logo_displayed = False
     
-    # Robust image loading
-    try:
-        from PIL import Image
-        
-        # Try finding the logo
-        if not os.path.exists(logo_path):
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            logo_path = os.path.join(current_dir, "CareerLens_Logo.png")
+    # Robust image loading using Base64 to prevent disappearance
+    # This embeds the image directly in the HTML, bypassing filesystem/serving issues
+    if os.path.exists(logo_path):
+        try:
+            import base64
+            with open(logo_path, "rb") as f:
+                data = f.read()
+                logo_base64 = base64.b64encode(data).decode()
             
-        if os.path.exists(logo_path):
-            # Open with PIL to ensure it's loaded correctly
-            image = Image.open(logo_path)
-            st.sidebar.image(image, use_container_width=True)
+            st.sidebar.markdown(
+                f'<img src="data:image/png;base64,{logo_base64}" style="width: 100%; max-width: 100%; margin-bottom: 20px;">',
+                unsafe_allow_html=True
+            )
             logo_displayed = True
-    except Exception as e:
-        # Fallback to simple path if PIL fails
-        if os.path.exists(logo_path):
-            st.sidebar.image(logo_path, use_container_width=True)
-            logo_displayed = True
+        except Exception as e:
+            # Fallback to standard Streamlit image if base64 fails
+            try:
+                st.sidebar.image(logo_path, use_container_width=True)
+                logo_displayed = True
+            except Exception:
+                pass
 
     st.sidebar.markdown("""
     <style>
