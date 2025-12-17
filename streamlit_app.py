@@ -365,8 +365,6 @@ st.sidebar.markdown("""
 <div class="careerlens-tagline">AI Career Copilot • Hong Kong</div>
 """, unsafe_allow_html=True)
 
-st.sidebar.markdown("---")
-
 PAGE_OPTIONS = {
     "👤 Job Seeker": "main",
     "💼 Job Search": "job_recommendations",
@@ -426,33 +424,6 @@ for label, page_key in _recruiter_nav:
         width="stretch",
     ):
         _go_to(page_key)
-
-active_job = st.session_state.get("selected_job")
-if active_job:
-    with st.sidebar.expander("Active job focus", expanded=False):
-        st.caption("Currently focusing on:")
-        st.write(f"**{active_job.get('title', 'Unknown Role')}**")
-        company = active_job.get("company")
-        if company:
-            st.caption(company)
-
-        if st.button("Clear selection", key="clear_selected_job", width="stretch"):
-            st.session_state.selected_job = None
-            st.session_state.selected_job_for_resume = None
-            st.session_state.show_resume_generator = False
-            st.session_state.generated_resume = None
-            if "interview" in st.session_state:
-                del st.session_state.interview
-            if "interview_started" in st.session_state:
-                del st.session_state.interview_started
-            if "_interview_job_key" in st.session_state:
-                del st.session_state._interview_job_key
-            st.rerun()
-
-current_id = st.session_state.get("job_seeker_id")
-if current_id:
-    with st.sidebar.expander("Session", expanded=False):
-        st.caption(f"Session ID: `{current_id}`")
 if not MODULES_AVAILABLE:
     st.error("❌ Page modules not available. Please ensure the modules/ui/pages directory is properly installed.")
     st.info("Falling back to basic functionality...")
@@ -494,24 +465,6 @@ elif st.session_state.current_page == "market_dashboard":
 
 elif st.session_state.current_page == "how_it_works":
     render_how_it_works_page()
-
-
-# ============================================================================
-# SIDEBAR HELP AND FOOTER
-# ============================================================================
-with st.sidebar.expander("Help", expanded=False):
-    st.markdown(
-        """
-**Job seeker flow**
-- **Job Seeker**: upload CV + save your profile
-- **Job Search**: run matched search + pick an active job
-- **Tailored Resume / AI Mock Interview**: use the active job for context
-
-**Recruiter flow**
-- **Job Posting**: publish/manage roles
-- **Recruitment Match**: match candidates to roles
-"""
-    )
                     
 # Footer
 st.markdown("---")
