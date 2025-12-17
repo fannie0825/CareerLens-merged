@@ -43,6 +43,14 @@ def market_dashboard_page():
         st.title("📊 Your Market Position")
 
         # ---------------------------------------------------------------------
+        # Performance toggles (Streamlit executes expander contents even collapsed)
+        # ---------------------------------------------------------------------
+        if "show_market_charts" not in st.session_state:
+            st.session_state.show_market_charts = False
+        if "show_market_deep_dive" not in st.session_state:
+            st.session_state.show_market_deep_dive = False
+
+        # ---------------------------------------------------------------------
         # Refresh guard: rehydrate user_profile if the session was refreshed
         # ---------------------------------------------------------------------
         user_profile = st.session_state.get("user_profile")
@@ -304,6 +312,21 @@ def market_dashboard_page():
 
         st.caption(f"Using **{len(matched_jobs)}** matched roles to estimate your positioning and skill gaps.")
 
+        with st.container():
+            col_a, col_b = st.columns(2)
+            with col_a:
+                st.session_state.show_market_charts = st.toggle(
+                    "📈 Show charts (can be heavy)",
+                    value=bool(st.session_state.get("show_market_charts")),
+                    help="Charts can be slow with large match sets. Toggle on only when you want them.",
+                )
+            with col_b:
+                st.session_state.show_market_deep_dive = st.toggle(
+                    "🔍 Show deep-dive analysis (can be heavy)",
+                    value=bool(st.session_state.get("show_market_deep_dive")),
+                    help="Deep dive includes tables and detailed breakdowns. Toggle on only when needed.",
+                )
+
         # Quick skill-gap summary (fast, no charts)
         try:
             from collections import Counter
@@ -340,54 +363,60 @@ def market_dashboard_page():
             matched_jobs,
             st.session_state.get('user_profile', {})
         )
-        
+
         # Keep landing fast: heavy charts and deep dive are opt-in.
-        with st.expander("📈 Charts & Visualizations", expanded=False):
-            create_enhanced_visualizations(
-                matched_jobs,
-                st.session_state.get('user_profile', {})
-            )
-        
+        with st.expander("📈 Charts & Visualizations", expanded=bool(st.session_state.get("show_market_charts"))):
+            if st.session_state.get("show_market_charts"):
+                create_enhanced_visualizations(
+                    matched_jobs,
+                    st.session_state.get('user_profile', {})
+                )
+            else:
+                st.caption("Charts are off to keep the page responsive. Toggle **Show charts** above to render them.")
+
         # Additional detailed analysis
-        with st.expander("🔍 Deep Dive Analysis", expanded=False):
-            # Industry distribution of matched jobs
-            industries = {}
-            for job in matched_jobs:
-                # Handle both nested 'job' structure and direct job properties
-                job_data = job.get('job', job) if isinstance(job, dict) else {}
-                
-                # Extract industry from company or description
-                company = job_data.get('company', '').lower()
-                if any(tech in company for tech in ['tech', 'software', 'ai', 'data']):
-                    industry = 'Technology'
-                elif any(finance in company for finance in ['bank', 'finance', 'investment', 'capital']):
-                    industry = 'Finance'
-                elif any(consult in company for consult in ['consulting', 'consultancy']):
-                    industry = 'Consulting'
-                else:
-                    industry = 'Other'
-                
-                industries[industry] = industries.get(industry, 0) + 1
-            
-            if industries:
-                st.markdown("#### 🏭 Industries in Your Matches")
-                for industry, count in industries.items():
-                    percentage = (count / len(matched_jobs)) * 100
-                    st.write(f"- **{industry}**: {count} jobs ({percentage:.1f}%)")
-            
-            # Display Smart Ranked Matches Table (Middle Section)
-            st.markdown("#### 🏆 Ranked Matches")
-            display_ranked_matches_table(
-                matched_jobs,
-                st.session_state.get('user_profile', {})
-            )
-            
-            # Display Match Breakdown & Application Copilot (Bottom Section)
-            st.markdown("#### 🧠 Match Breakdown & Skill Gaps")
-            display_match_breakdown(
-                matched_jobs,
-                st.session_state.get('user_profile', {})
-            )
+        with st.expander("🔍 Deep Dive Analysis", expanded=bool(st.session_state.get("show_market_deep_dive"))):
+            if not st.session_state.get("show_market_deep_dive"):
+                st.caption("Deep dive is off to keep the page responsive. Toggle **Show deep-dive analysis** above to render it.")
+            else:
+                # Industry distribution of matched jobs
+                industries = {}
+                for job in matched_jobs:
+                    # Handle both nested 'job' structure and direct job properties
+                    job_data = job.get('job', job) if isinstance(job, dict) else {}
+
+                    # Extract industry from company or description
+                    company = job_data.get('company', '').lower()
+                    if any(tech in company for tech in ['tech', 'software', 'ai', 'data']):
+                        industry = 'Technology'
+                    elif any(finance in company for finance in ['bank', 'finance', 'investment', 'capital']):
+                        industry = 'Finance'
+                    elif any(consult in company for consult in ['consulting', 'consultancy']):
+                        industry = 'Consulting'
+                    else:
+                        industry = 'Other'
+
+                    industries[industry] = industries.get(industry, 0) + 1
+
+                if industries:
+                    st.markdown("#### 🏭 Industries in Your Matches")
+                    for industry, count in industries.items():
+                        percentage = (count / len(matched_jobs)) * 100
+                        st.write(f"- **{industry}**: {count} jobs ({percentage:.1f}%)")
+
+                # Display Smart Ranked Matches Table (Middle Section)
+                st.markdown("#### 🏆 Ranked Matches")
+                display_ranked_matches_table(
+                    matched_jobs,
+                    st.session_state.get('user_profile', {})
+                )
+
+                # Display Match Breakdown & Application Copilot (Bottom Section)
+                st.markdown("#### 🧠 Match Breakdown & Skill Gaps")
+                display_match_breakdown(
+                    matched_jobs,
+                    st.session_state.get('user_profile', {})
+                )
     except Exception as e:
         st.error(f"""
         ❌ **Dashboard Error**
