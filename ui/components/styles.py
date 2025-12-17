@@ -257,7 +257,7 @@ def render_styles():
             right: -30px;
             top: -30px;
             width: 250px;
-            opacity: 0.15;
+            opacity: 0.05;
             transform: rotate(-15deg);
             pointer-events: none;
             z-index: 5;
