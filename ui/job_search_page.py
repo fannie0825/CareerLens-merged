@@ -23,6 +23,8 @@ Flow:
 import streamlit as st
 import time
 from typing import List, Dict, Optional
+import re
+from utils.skill_filter import filter_skills
 
 
 def job_recommendations_page(job_seeker_id: Optional[str] = None):
@@ -669,16 +671,19 @@ def _prepare_job_for_storage(job_seeker_id: str, job: Dict) -> Dict:
     # Handle skills lists
     required_skills = job_data.get('skills', [])
     if isinstance(required_skills, list):
+        required_skills = filter_skills(required_skills)
         required_skills_str = ', '.join(required_skills[:20])
     else:
         required_skills_str = str(required_skills)
     
     if isinstance(matched_skills, list):
+        matched_skills = filter_skills(matched_skills)
         matched_skills_str = ', '.join(matched_skills[:20])
     else:
         matched_skills_str = str(matched_skills)
     
     if isinstance(missing_skills, list):
+        missing_skills = filter_skills(missing_skills)
         missing_skills_str = ', '.join(missing_skills[:10])
     else:
         missing_skills_str = str(missing_skills)
@@ -867,14 +872,44 @@ def _display_job_matches(matched_jobs: List[Dict], num_jobs_to_show: int, job_se
                 required_skills = [s.strip() for s in required_skills.split(",") if s.strip()]
             elif not isinstance(required_skills, list):
                 required_skills = []
+            required_skills = filter_skills(required_skills)
 
             # Skills to improve: required but NOT matched
             skills_to_improve = []
             if required_skills:
-                required_set = set([s.lower() for s in required_skills])
-                matched_set = set([s.lower() for s in matched_skills])
-                missing_skills = required_set - matched_set
-                skills_to_improve = list(missing_skills)
+                def _canon_skill(s: str) -> str:
+                    if not isinstance(s, str):
+                        return ""
+                    x = s.strip().lower()
+                    if not x:
+                        return ""
+                    # Normalize common language fluency phrases and punctuation.
+                    x = re.sub(r"[\(\)\[\]\{\}]", " ", x)
+                    x = re.sub(r"[^a-z0-9\+#\. ]+", " ", x)
+                    for token in ("language", "fluent", "native", "professional", "proficiency", "proficient"):
+                        x = x.replace(token, " ")
+                    x = " ".join(x.split())
+                    return x
+
+                # Build candidate inventory from profile (skills + languages),
+                # not from `matched_skills` (which depends on job text mentioning them).
+                hard = job_seeker_data.get("hard_skills", "") or ""
+                langs = job_seeker_data.get("languages", "") or ""
+                candidate_tokens = []
+                for raw in (hard, langs):
+                    candidate_tokens.extend([t.strip() for t in str(raw).split(",") if t.strip()])
+                candidate_set = {c for c in (_canon_skill(t) for t in candidate_tokens) if c}
+
+                # Preserve original job skill strings for display, but compare canonically.
+                missing_required = []
+                seen = set()
+                for req in required_skills:
+                    c = _canon_skill(str(req))
+                    if not c or c in candidate_set or c in seen:
+                        continue
+                    seen.add(c)
+                    missing_required.append(str(req).strip())
+                skills_to_improve = missing_required
 
             # Display matched skills section
             if matched_skills:
