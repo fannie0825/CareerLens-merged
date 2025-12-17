@@ -95,7 +95,7 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
     
     db = get_job_seeker_db()
     
-    st.title("💼 Personalized Job Recommendations")
+    st.title("💼 Job Search & Market Insights")
 
     # Get job seeker data - add error handling
     job_seeker_data = dict()
