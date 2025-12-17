@@ -839,7 +839,7 @@ def _display_job_matches(matched_jobs: List[Dict], num_jobs_to_show: int, job_se
                 )
 
             # Action buttons
-            col_btn1, col_btn2 = st.columns(2)
+            col_btn1, col_btn2, col_btn3 = st.columns(3)
             
             with col_btn1:
                 # Apply link
@@ -856,11 +856,28 @@ def _display_job_matches(matched_jobs: List[Dict], num_jobs_to_show: int, job_se
             
             with col_btn2:
                 # Resume tailoring button
-                if st.button("✨ Tailor Resume", key=f"tailor_{job.get('id', i)}", use_container_width=True):
-                    # Set both session state variables for compatibility
-                    st.session_state.selected_job_for_resume = job
+                if st.button("✨ Tailor Resume", key=f"btn_tailor_{job.get('id', i)}", use_container_width=True):
+                    # 1) Store the job object so the Resume Editor can find it
                     st.session_state.selected_job = job
+                    # Compatibility: keep the older key used elsewhere in the app
+                    st.session_state.selected_job_for_resume = job
                     st.session_state.show_resume_generator = True
+
+                    # 2) Switch the global page state (this app uses 'tailored_resume')
+                    st.session_state.current_page = "tailored_resume"
+
+                    # 3) Rerun to land on the Resume Editor immediately
+                    st.rerun()
+
+            with col_btn3:
+                # Mock interview trigger
+                if st.button("🎙️ Mock Interview", key=f"btn_mock_{job.get('id', i)}", use_container_width=True):
+                    st.session_state.selected_job = job
+                    st.session_state.current_page = "ai_interview"
+                    # Ensure a clean start when switching jobs
+                    if 'interview' in st.session_state:
+                        del st.session_state.interview
+                    st.rerun()
 
             # Show resume generator if selected
             if st.session_state.get('show_resume_generator') and st.session_state.get('selected_job_for_resume', {}).get('id') == job.get('id'):

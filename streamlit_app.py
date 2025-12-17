@@ -448,6 +448,29 @@ with st.sidebar:
     display_token_usage()
     
     st.markdown("---")
+
+    # Sidebar status: show active job focus (if any)
+    active_job = st.session_state.get('selected_job')
+    if active_job:
+        with st.expander("📌 Active Job Focus", expanded=True):
+            st.caption("Currently focusing on:")
+            st.write(f"**{active_job.get('title', 'Unknown Role')}**")
+            company = active_job.get("company")
+            if company:
+                st.caption(company)
+
+            if st.button("Clear Selection", key="clear_selected_job", use_container_width=True):
+                st.session_state.selected_job = None
+                st.session_state.selected_job_for_resume = None
+                st.session_state.show_resume_generator = False
+                st.session_state.generated_resume = None
+                if 'interview' in st.session_state:
+                    del st.session_state.interview
+                if 'interview_started' in st.session_state:
+                    del st.session_state.interview_started
+                if '_interview_job_key' in st.session_state:
+                    del st.session_state._interview_job_key
+                st.rerun()
     
     # Display current session state
     current_id = st.session_state.get('job_seeker_id')
