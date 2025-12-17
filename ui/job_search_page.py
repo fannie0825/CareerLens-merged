@@ -374,6 +374,8 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
                                 })
                             
                             st.session_state.matched_jobs = processed_matches
+                            # Market Dashboard gating uses this flag; Job Search should set it.
+                            st.session_state.dashboard_ready = True
                             st.success(f"✅ Loaded {len(processed_matches)} cached matched jobs!")
                             st.rerun()
                             
@@ -501,6 +503,8 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
                                     
                                     # Save to session state
                                     st.session_state.matched_jobs = matched_jobs
+                                    # Market Dashboard gating uses this flag; Job Search should set it.
+                                    st.session_state.dashboard_ready = True
                                     
                                     # ==========================================
                                     # STEP 2 DATA FLOW: Store matched jobs in job_post_API.db
