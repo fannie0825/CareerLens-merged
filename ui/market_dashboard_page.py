@@ -18,7 +18,6 @@ def market_dashboard_page():
         from utils import _cleanup_session_state, validate_secrets
         from ui.components.styles import render_styles
         from ui.components import (
-            render_sidebar as modular_render_sidebar,
             render_hero_banner,
             display_resume_generator as modular_display_resume_generator,
             display_market_positioning_profile,
@@ -56,9 +55,6 @@ def market_dashboard_page():
         if st.session_state.get('show_resume_generator', False):
             modular_display_resume_generator()
             return
-        
-        # Render modular sidebar with controls
-        modular_render_sidebar()
         
         # Render hero banner at the top of main content
         render_hero_banner(
