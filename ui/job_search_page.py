@@ -323,10 +323,10 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
         # ----------------------------------------
         # 🔧 Search Speed Options
         # ----------------------------------------
-        st.markdown("##### ⚡ Search Mode")
+        st.markdown("##### ⚡ Search speed")
 
         search_mode = st.radio(
-            "Choose search speed:",
+            "Search speed",
             JOB_SEARCH_MODE_OPTIONS,
             index=0,
             horizontal=True,
