@@ -629,7 +629,7 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
             
             # Suggest next steps
             st.markdown("---")
-            st.info("💡 **Next Step:** Go to the **Market Dashboard** to see detailed analysis, salary insights, and skill gaps based on these results.")
+            st.info("💡 **Next Step:** Go to **Your Market Position** to see detailed analysis, salary insights, and skill gaps based on these results.")
             if st.button("📊 View Market Analysis", width="stretch"):
                 st.session_state.current_page = "market_dashboard"
                 st.rerun()

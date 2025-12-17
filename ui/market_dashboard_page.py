@@ -1,5 +1,5 @@
 """
-Market Dashboard Page - Comprehensive Market Insights.
+Your Market Position Page - Comprehensive Market Insights.
 
 This module contains the modular CareerLens dashboard for viewing:
 - Market positioning profile
@@ -12,7 +12,7 @@ import streamlit as st
 
 
 def market_dashboard_page():
-    """Market Dashboard Page - Modular CareerLens Dashboard"""
+    """Your Market Position Page - Modular CareerLens Dashboard"""
     # Check if modules are available
     try:
         from utils import _cleanup_session_state, validate_secrets
@@ -32,8 +32,8 @@ def market_dashboard_page():
         import_error = str(e)
     
     if not MODULES_AVAILABLE:
-        st.error("❌ Market Dashboard modules are not available. Please ensure the modules/ directory is properly installed.")
-        st.info("The Market Dashboard requires the modular UI components from the modules/ directory.")
+        st.error("❌ Your Market Position modules are not available. Please ensure the modules/ directory is properly installed.")
+        st.info("This page requires the modular UI components from the modules/ directory.")
         return
     
     try:

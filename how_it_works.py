@@ -452,7 +452,7 @@ def render_how_it_works_page():
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        if st.button("📊 Go to Market Dashboard", width="stretch", type="primary"):
+        if st.button("📊 Go to Your Market Position", width="stretch", type="primary"):
             st.session_state.current_page = "market_dashboard"
             st.rerun()
         
