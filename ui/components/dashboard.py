@@ -4,6 +4,7 @@ import pandas as pd
 from core.salary_analyzer import calculate_salary_band
 from utils import get_text_generator
 import re
+from utils.skill_filter import is_valid_skill
 
 
 def _looks_like_spoken_language(skill: str) -> bool:
@@ -96,7 +97,12 @@ def calculate_match_scores(jobs, user_skills_str):
         job_skills_lower = [
             s.lower().strip()
             for s in job_skills
-            if isinstance(s, str) and s.strip() and not _looks_like_spoken_language(s)
+            if (
+                isinstance(s, str)
+                and s.strip()
+                and is_valid_skill(s)
+                and not _looks_like_spoken_language(s)
+            )
         ]
         missing_skills = [js for js in job_skills_lower if not any(cs in js or js in cs for cs in candidate_skills)]
         

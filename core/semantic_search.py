@@ -19,6 +19,7 @@ import time
 import streamlit as st
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Tuple
+from utils.skill_filter import filter_skills
 
 # Lazy imports for heavy modules - only load when needed
 _np = None
@@ -489,7 +490,8 @@ class SemanticJobSearch:
             return 0.0, []
         
         user_skills_list = [s.strip() for s in str(user_skills).split(',') if s.strip()]
-        job_skills_list = [s.strip() for s in job_skills if isinstance(s, str) and s.strip()]
+        # Filter obvious non-skills (full-time/remote/etc) before matching.
+        job_skills_list = filter_skills([s for s in job_skills if isinstance(s, str) and s.strip()])
         
         if not user_skills_list or not job_skills_list:
             return 0.0, []

@@ -24,6 +24,7 @@ import streamlit as st
 import time
 from typing import List, Dict, Optional
 import re
+from utils.skill_filter import filter_skills
 
 
 def job_recommendations_page(job_seeker_id: Optional[str] = None):
@@ -670,16 +671,19 @@ def _prepare_job_for_storage(job_seeker_id: str, job: Dict) -> Dict:
     # Handle skills lists
     required_skills = job_data.get('skills', [])
     if isinstance(required_skills, list):
+        required_skills = filter_skills(required_skills)
         required_skills_str = ', '.join(required_skills[:20])
     else:
         required_skills_str = str(required_skills)
     
     if isinstance(matched_skills, list):
+        matched_skills = filter_skills(matched_skills)
         matched_skills_str = ', '.join(matched_skills[:20])
     else:
         matched_skills_str = str(matched_skills)
     
     if isinstance(missing_skills, list):
+        missing_skills = filter_skills(missing_skills)
         missing_skills_str = ', '.join(missing_skills[:10])
     else:
         missing_skills_str = str(missing_skills)
@@ -868,6 +872,7 @@ def _display_job_matches(matched_jobs: List[Dict], num_jobs_to_show: int, job_se
                 required_skills = [s.strip() for s in required_skills.split(",") if s.strip()]
             elif not isinstance(required_skills, list):
                 required_skills = []
+            required_skills = filter_skills(required_skills)
 
             # Skills to improve: required but NOT matched
             skills_to_improve = []
