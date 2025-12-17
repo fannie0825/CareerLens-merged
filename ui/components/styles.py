@@ -499,6 +499,18 @@ def render_styles():
             margin: 0.5rem 0 0 0;
             opacity: 0.9;
         }
+
+        /* Streamlit Alert Styling for Coherence */
+        [data-testid="stAlert"] {
+            border-radius: 12px !important;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        /* Enhance Spinner to match Brand Glow */
+        [data-testid="stSpinner"] > div {
+            border-top-color: var(--brand-glow) !important;
+        }
     </style>
     <div id="ws-reconnecting-overlay" class="ws-reconnecting-overlay">
         <div class="ws-reconnecting-content">
