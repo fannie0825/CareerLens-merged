@@ -52,7 +52,6 @@ from .components.job_cards import display_job_card
 from .components.user_profile import display_user_profile
 from .components.dashboard import (
     display_market_positioning_profile,
-    display_refine_results_section,
     display_ranked_matches_table,
     display_match_breakdown,
     display_skill_matching_matrix,
@@ -112,7 +111,6 @@ __all__ = [
     
     # Components - Dashboard
     'display_market_positioning_profile',
-    'display_refine_results_section',
     'display_ranked_matches_table',
     'display_match_breakdown',
     'display_skill_matching_matrix',
