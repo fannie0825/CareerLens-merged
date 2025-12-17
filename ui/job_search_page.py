@@ -775,7 +775,7 @@ def _display_job_matches(matched_jobs: List[Dict], num_jobs_to_show: int, job_se
         from services.azure_openai import generate_docx_from_json, generate_pdf_from_json, format_resume_as_text
         from core.resume_parser import verify_profile_data_pass2
         from utils.helpers import ProgressTracker, _websocket_keepalive
-        from ui.visualizations import create_enhanced_visualizations, create_job_comparison_radar
+        from ui.visualizations import create_job_comparison_radar
         RESUME_AVAILABLE = True
     except ImportError:
         RESUME_AVAILABLE = False
@@ -997,7 +997,10 @@ def _display_job_matches(matched_jobs: List[Dict], num_jobs_to_show: int, job_se
                         st.rerun()
 
             # Create radar chart for this job, added 15/12/2025 by Michael
-            create_job_comparison_radar(result, job, job_seeker_data, f"id_{job.get('id', i)}")
+            # TEMP DEBUG: Commented out to diagnose UI freeze / stale buttons.
+            # If disabling this fixes the "Market Position" button becoming unclickable,
+            # the issue is inside the visualization rendering/math.
+            # create_job_comparison_radar(result, job, job_seeker_data, f"id_{job.get('id', i)}")
 
 
 def _display_resume_generator_ui(job: Dict, user_profile: Dict, resume_text: str = ""):
