@@ -40,6 +40,17 @@ def market_dashboard_page():
     try:
         # Render CSS styles (Handled globally in streamlit_app.py)
         # render_styles()
+
+        # =========================================================
+        # Smart entry: show focused context if arriving from Job Search
+        # =========================================================
+        job_context = st.session_state.get("selected_job")
+        if job_context:
+            target_title = job_context.get("title") or job_context.get("job_title") or "Selected role"
+            target_company = job_context.get("company") or job_context.get("company_name") or ""
+            subtitle = f"{target_title} @ {target_company}" if target_company else target_title
+            st.subheader(f"📊 Market Analysis for: {subtitle}")
+            st.caption("Tip: run a Job Search first for richer market insights across matched roles.")
         
         # Check if resume generator should be shown
         if st.session_state.get('show_resume_generator', False):
@@ -55,8 +66,12 @@ def market_dashboard_page():
             st.session_state.matched_jobs if st.session_state.get('dashboard_ready', False) else None
         )
         
-        # Main dashboard area - only show after analysis
-        if not st.session_state.get('dashboard_ready', False) or not st.session_state.get('matched_jobs'):
+        # Main dashboard area - show whenever we have matches (Job Search sets matched_jobs too)
+        if st.session_state.get('matched_jobs') and not st.session_state.get('dashboard_ready', False):
+            # Backfill the flag for users arriving from Job Search / cached matches.
+            st.session_state.dashboard_ready = True
+
+        if not st.session_state.get('matched_jobs'):
             st.info("👆 Upload your CV in the sidebar to get started. Once uploaded, use the 'Refine Results' section below to search for jobs and see your market positioning.")
             
             # Show the Refine Results section even before search to allow user to initiate search

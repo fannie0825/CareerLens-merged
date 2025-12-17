@@ -251,7 +251,17 @@ def _display_job_selection(jobs: List[Dict], source: str = "session"):
                         }
                     else:
                         selected_job = job.get('job', job)
-                        selected_job['id'] = job_id
+                        # Normalize keys (some sources use company_name/job_description/etc.)
+                        selected_job = {
+                            **(selected_job if isinstance(selected_job, dict) else {}),
+                            "id": selected_job.get("id") or selected_job.get("job_id") or job_id,
+                            "title": selected_job.get("title") or selected_job.get("job_title") or title,
+                            "company": selected_job.get("company") or selected_job.get("company_name") or company,
+                            "location": selected_job.get("location") or location,
+                            "description": selected_job.get("description") or selected_job.get("job_description") or "",
+                            "url": selected_job.get("url") or selected_job.get("application_url") or "#",
+                            "skills": selected_job.get("skills") or selected_job.get("required_skills") or [],
+                        }
                     
                     st.session_state.selected_job = selected_job
                     st.session_state.show_resume_generator = True

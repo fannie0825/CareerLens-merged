@@ -374,6 +374,8 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
                                 })
                             
                             st.session_state.matched_jobs = processed_matches
+                            # Market Dashboard gating uses this flag; Job Search should set it.
+                            st.session_state.dashboard_ready = True
                             st.success(f"✅ Loaded {len(processed_matches)} cached matched jobs!")
                             st.rerun()
                             
@@ -501,6 +503,8 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
                                     
                                     # Save to session state
                                     st.session_state.matched_jobs = matched_jobs
+                                    # Market Dashboard gating uses this flag; Job Search should set it.
+                                    st.session_state.dashboard_ready = True
                                     
                                     # ==========================================
                                     # STEP 2 DATA FLOW: Store matched jobs in job_post_API.db
@@ -649,6 +653,37 @@ def _prepare_job_for_storage(job_seeker_id: str, job: Dict) -> Dict:
         'matched_skills': matched_skills_str,
         'missing_skills': missing_skills_str
     }
+
+
+def _normalize_job_for_session(job: Dict, *, fallback_id: Optional[str] = None) -> Dict:
+    """Normalize a job dict so downstream 'express lane' pages don't KeyError.
+
+    Different sources use different keys (e.g., company vs company_name).
+    This ensures `selected_job` always has the common UI keys.
+    """
+    if not isinstance(job, dict):
+        job = {}
+
+    title = job.get("title") or job.get("job_title") or "Unknown Role"
+    company = job.get("company") or job.get("company_name") or "Unknown Company"
+    location = job.get("location") or "Unknown Location"
+    description = job.get("description") or job.get("job_description") or ""
+    url = job.get("url") or job.get("application_url") or job.get("job_url") or "#"
+    skills = job.get("skills") or job.get("required_skills") or []
+
+    normalized = dict(job)
+    normalized.update(
+        {
+            "id": job.get("id") or job.get("job_id") or fallback_id or job.get("id"),
+            "title": title,
+            "company": company,
+            "location": location,
+            "description": description,
+            "url": url,
+            "skills": skills,
+        }
+    )
+    return normalized
 
 
 def _save_search_to_history(search_query: str, location: str, results: List[Dict]):
@@ -858,9 +893,9 @@ def _display_job_matches(matched_jobs: List[Dict], num_jobs_to_show: int, job_se
                 # Resume tailoring button
                 if st.button("✨ Tailor Resume", key=f"btn_tailor_{job.get('id', i)}", use_container_width=True):
                     # 1) Store the job object so the Resume Editor can find it
-                    st.session_state.selected_job = job
+                    st.session_state.selected_job = _normalize_job_for_session(job, fallback_id=str(job.get('id', i)))
                     # Compatibility: keep the older key used elsewhere in the app
-                    st.session_state.selected_job_for_resume = job
+                    st.session_state.selected_job_for_resume = st.session_state.selected_job
                     st.session_state.show_resume_generator = True
 
                     # 2) Switch the global page state (this app uses 'tailored_resume')
@@ -872,7 +907,7 @@ def _display_job_matches(matched_jobs: List[Dict], num_jobs_to_show: int, job_se
             with col_btn3:
                 # Mock interview trigger
                 if st.button("🎙️ Mock Interview", key=f"btn_mock_{job.get('id', i)}", use_container_width=True):
-                    st.session_state.selected_job = job
+                    st.session_state.selected_job = _normalize_job_for_session(job, fallback_id=str(job.get('id', i)))
                     st.session_state.current_page = "ai_interview"
                     # Ensure a clean start when switching jobs
                     if 'interview' in st.session_state:
