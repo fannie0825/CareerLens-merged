@@ -337,15 +337,19 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
         # Map search mode to job count (shared mapping in utils.config)
         num_jobs_to_search = get_num_jobs_to_search(search_mode, default=15)
 
-        col1, col2 = st.columns(2)
-        with col1:
-            num_jobs_to_show = st.slider(
-                "Top matches to display",
-                3, 15, 5,
-                key="jobs_show_slider",
-            )
-        with col2:
-            st.info(f"⏱️ Estimated time: {get_search_time_estimate(search_mode)}")
+        # Keep the UI simple: one control (search speed).
+        # Derive how many top matches we display from the chosen speed.
+        if "Quick Search" in str(search_mode):
+            num_jobs_to_show = 5
+        elif "Standard Search" in str(search_mode):
+            num_jobs_to_show = 8
+        else:
+            num_jobs_to_show = 10
+
+        st.info(
+            f"⏱️ Estimated time: {get_search_time_estimate(search_mode)} • "
+            f"Showing top {num_jobs_to_show}"
+        )
 
     # -------------------------------------------------------
     # 🔎 STEP 0: Check for Cached Matches (Optimization)
