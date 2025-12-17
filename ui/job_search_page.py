@@ -941,6 +941,11 @@ def _display_job_matches(matched_jobs: List[Dict], num_jobs_to_show: int, job_se
             with col_btn2:
                 # Resume tailoring button
                 if st.button("✨ Tailor Resume", key=f"btn_tailor_{job.get('id', i)}", width="stretch"):
+                    # Brief UX confirmation (guarded for older Streamlit versions)
+                    toast = getattr(st, "toast", None)
+                    if callable(toast):
+                        toast("Job selected! Switching to Resume Editor...", icon="📝")
+
                     # 1) Store the job object so the Resume Editor can find it
                     st.session_state.selected_job = _normalize_job_for_session(job, fallback_id=str(job.get('id', i)))
                     # Compatibility: keep the older key used elsewhere in the app
