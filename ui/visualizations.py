@@ -5,7 +5,7 @@ Contains enhanced visualization functions for displaying job match analytics,
 skill distributions, and comparative charts.
 """
 
-import streamlit as st # pyright: ignore[reportMissingImports]
+import streamlit as st  # pyright: ignore[reportMissingImports]
 from collections import Counter
 import datetime
 from typing import Dict, List
@@ -53,11 +53,6 @@ def _get_numpy():
     return _np
 
 
-
-import streamlit as st # pyright: ignore[reportMissingImports]
-import plotly.graph_objs as go
-from collections import Counter
-
 def apply_chart_theme(fig):
     """Apply consistent dark theme to Plotly figures"""
     fig.update_layout(
@@ -88,6 +83,9 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
     if not matched_jobs or len(matched_jobs) == 0:
         st.info("No matched jobs available for visualization.")
         return
+    
+    # Lazy-load plotly only when charts are rendered
+    go = _get_plotly()
 
     job_titles = []
     sim_scores = []
