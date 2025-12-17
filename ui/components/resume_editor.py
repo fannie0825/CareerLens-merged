@@ -245,16 +245,49 @@ Return ONLY the improved bullet point, no additional text."""
 
 def display_resume_generator():
     """Display the resume generator interface with structured resume editing"""
-    if st.session_state.selected_job is None:
-        st.warning("No job selected. Please select a job first.")
-        if st.button("← Back to Jobs"):
-            st.session_state.show_resume_generator = False
-            st.rerun()
-        return
-    
-    job = st.session_state.selected_job
-    
-    st.markdown('<h1 class="main-header">📄 Resume Generator</h1>', unsafe_allow_html=True)
+    # ---------------------------------------------------------------------
+    # 🛠️ Smart Entry Logic (arrived from Job Match page vs. manual entry)
+    # ---------------------------------------------------------------------
+    st.title("✨ AI Resume Tailor")
+
+    passed_job = st.session_state.get('selected_job', None)
+
+    def _back_to_job_matches():
+        # Clear context and route back to job matches
+        st.session_state.selected_job = None
+        st.session_state.selected_job_for_resume = None
+        st.session_state.show_resume_generator = False
+        st.session_state.generated_resume = None
+        st.session_state.match_score = None
+        st.session_state.missing_keywords = None
+        st.session_state.current_page = "job_recommendations"
+        st.rerun()
+
+    if passed_job:
+        # Visual confirmation for the user
+        st.success(f"🎯 **Targeting:** {passed_job.get('title', 'Unknown')} at {passed_job.get('company', 'Unknown')}")
+
+        # Pre-fill the data from the session state
+        job_description_input = passed_job.get('description', "") or ""
+
+        # Option to clear and start fresh
+        if st.button("⬅️ Back to Job Matches", use_container_width=True):
+            _back_to_job_matches()
+    else:
+        # Standard manual entry if they clicked the sidebar directly (or landed here without a selected job)
+        job_description_input = st.text_area("Paste the Job Description here:", key="manual_job_description_input")
+
+        passed_job = {
+            "title": st.text_input("Job Title (optional)", value="", key="manual_job_title_input"),
+            "company": st.text_input("Company (optional)", value="", key="manual_job_company_input"),
+            "location": st.text_input("Location (optional)", value="", key="manual_job_location_input"),
+            "description": job_description_input,
+            "url": "#",
+        }
+
+    # Normalize job object used by the existing generator logic below
+    job = passed_job or {}
+    job["description"] = job_description_input or ""
     
     st.markdown(f"""
     <div class="job-card">
@@ -276,7 +309,10 @@ def display_resume_generator():
         st.write("**Your Profile:**", st.session_state.user_profile.get('name', 'N/A'))
     
     with col2:
-        if st.button("← Back to Jobs"):
+        if st.button("← Back", use_container_width=True):
+            # If we have a current page router, go back to job matches; otherwise just close the generator.
+            if st.session_state.get("current_page") is not None:
+                _back_to_job_matches()
             st.session_state.show_resume_generator = False
             st.session_state.generated_resume = None
             st.session_state.match_score = None
@@ -285,8 +321,15 @@ def display_resume_generator():
     
     st.markdown("---")
     
+    if not job_description_input or not job_description_input.strip():
+        st.info("Paste/select a job description above to enable generation.")
+        return
+
     if st.button("🚀 Generate Tailored Resume", type="primary", use_container_width=True):
         with st.spinner("🤖 Creating your personalized resume using AI..."):
+            # Persist manual entry so downstream steps (editor/downloads) have a job context
+            st.session_state.selected_job = job
+
             text_gen = get_text_generator()
             if text_gen is None:
                 st.error("⚠️ Azure OpenAI is not configured.")
