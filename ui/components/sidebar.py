@@ -17,7 +17,7 @@ def render_sidebar():
         # Logo/branding is rendered centrally in streamlit_app.py to avoid duplicate
         # sidebar headers when modular pages add their own sidebar controls.
         st.markdown("---")
-        st.subheader("📌 Market Dashboard")
+        st.subheader("📌 Your Market Position")
         
         # Display skill matching explanation
         display_skill_matching_matrix(st.session_state.user_profile)

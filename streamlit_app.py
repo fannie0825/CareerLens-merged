@@ -370,7 +370,7 @@ PAGE_OPTIONS = {
     "💼 Job Search": "job_recommendations",
     "📝 Tailored Resume": "tailored_resume",
     "🤖 AI Mock Interview": "ai_interview",
-    "📊 Market Dashboard": "market_dashboard",
+    "📊 Your Market Position": "market_dashboard",
     "🧠 How This App Works": "how_it_works",
     "🎯 Recruiter • Job Posting": "head_hunter",
     "🎯 Recruiter • Recruitment Match": "recruitment_match",
@@ -390,7 +390,7 @@ _job_seeker_nav = [
     ("💼 Job Search", "job_recommendations"),
     ("📄 AI Powered Tailored Resume", "tailored_resume"),
     ("🤖 AI Mock Interview", "ai_interview"),
-    ("📊 Market Dashboard", "market_dashboard"),
+    ("📊 Your Market Position", "market_dashboard"),
     ("🧠 How This App Works", "how_it_works"),
 ]
 
