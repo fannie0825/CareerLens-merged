@@ -381,17 +381,21 @@ def display_resume_generator():
             else:
                 st.error("❌ Failed to generate resume. Please try again.")
     
-    if st.session_state.generated_resume and st.session_state.get('match_score') is not None:
+    generated_resume = st.session_state.get("generated_resume")
+    match_score = st.session_state.get("match_score")
+    missing_keywords = st.session_state.get("missing_keywords")
+
+    if generated_resume and match_score is not None:
         display_match_score_feedback(
-            st.session_state.match_score,
-            st.session_state.missing_keywords,
+            match_score,
+            missing_keywords,
             job_title
         )
     
-    if st.session_state.generated_resume:
+    if generated_resume:
         st.markdown("---")
         
-        edited_resume_data = render_structured_resume_editor(st.session_state.generated_resume)
+        edited_resume_data = render_structured_resume_editor(generated_resume)
         
         if edited_resume_data:
             st.session_state.generated_resume = edited_resume_data
