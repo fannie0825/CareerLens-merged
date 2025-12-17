@@ -779,7 +779,7 @@ def _display_job_matches(matched_jobs: List[Dict], num_jobs_to_show: int, job_se
         from services.azure_openai import generate_docx_from_json, generate_pdf_from_json, format_resume_as_text
         from core.resume_parser import verify_profile_data_pass2
         from utils.helpers import ProgressTracker, _websocket_keepalive
-        from ui.visualizations import create_enhanced_visualizations, create_job_comparison_radar
+        from ui.visualizations import create_job_comparison_radar
         RESUME_AVAILABLE = True
     except ImportError:
         RESUME_AVAILABLE = False
@@ -1000,8 +1000,22 @@ def _display_job_matches(matched_jobs: List[Dict], num_jobs_to_show: int, job_se
                         st.session_state.selected_job_for_resume = None
                         st.rerun()
 
-            # Create radar chart for this job, added 15/12/2025 by Michael
-            create_job_comparison_radar(result, job, job_seeker_data, f"id_{job.get('id', i)}")
+            # Wrap the heavy visualization to prevent UI locking.
+            # Note: Streamlit still executes code inside an expander on rerun, so we
+            # additionally guard the chart behind a checkbox (true on-demand render).
+            with st.expander("📊 View Match Analysis Radar", expanded=False):
+                should_render_radar = st.checkbox(
+                    "Render radar chart (may be slow)",
+                    value=False,
+                    key=f"render_radar_{job.get('id', i)}",
+                )
+                if should_render_radar:
+                    create_job_comparison_radar(
+                        result,
+                        job,
+                        job_seeker_data,
+                        f"radar_{job.get('id', i)}",
+                    )
 
 
 def _display_resume_generator_ui(job: Dict, user_profile: Dict, resume_text: str = ""):

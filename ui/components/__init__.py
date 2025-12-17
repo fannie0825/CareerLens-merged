@@ -11,7 +11,6 @@ This package contains reusable UI components:
 - user_profile: User profile display and editing
 """
 
-from .sidebar import render_sidebar
 from .hero_banner import render_hero_banner
 from .job_cards import display_job_card
 from .user_profile import display_user_profile
@@ -27,9 +26,6 @@ from .match_feedback import display_match_score_feedback
 from .styles import render_styles, get_logo_html
 
 __all__ = [
-    # Sidebar
-    'render_sidebar',
-    
     # Hero Banner
     'render_hero_banner',
     

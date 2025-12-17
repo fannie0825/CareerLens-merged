@@ -46,7 +46,6 @@ from .resume_upload_page import (
 )
 
 # Re-export components for convenience
-from .components.sidebar import render_sidebar
 from .components.hero_banner import render_hero_banner
 from .components.job_cards import display_job_card
 from .components.user_profile import display_user_profile
@@ -96,9 +95,6 @@ __all__ = [
     # Page modules - Resume Upload
     'resume_upload_page',
     'process_resume_text',
-    
-    # Components - Sidebar
-    'render_sidebar',
     
     # Components - Hero Banner
     'render_hero_banner',

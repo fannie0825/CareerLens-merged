@@ -400,7 +400,6 @@ class TestUIComponents:
     def test_ui_components_import(self):
         """Test UI components can be imported"""
         from ui.components import (
-            render_sidebar,
             render_hero_banner,
             display_job_card,
             display_user_profile,
@@ -408,7 +407,6 @@ class TestUIComponents:
             render_styles,
         )
         
-        assert render_sidebar is not None
         assert render_hero_banner is not None
     
     def test_visualizations_import(self):

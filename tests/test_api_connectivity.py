@@ -24,7 +24,11 @@ class TestLocalEmbeddings:
     
     def test_sentence_transformer_load(self):
         """Test SentenceTransformer model can be loaded"""
-        from sentence_transformers import SentenceTransformer
+        sentence_transformers = pytest.importorskip(
+            "sentence_transformers",
+            reason="Optional dependency not installed in minimal environments",
+        )
+        SentenceTransformer = sentence_transformers.SentenceTransformer
         
         # Load the model used by the app
         model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -32,7 +36,11 @@ class TestLocalEmbeddings:
     
     def test_generate_embedding(self):
         """Test generating an embedding from text"""
-        from sentence_transformers import SentenceTransformer
+        sentence_transformers = pytest.importorskip(
+            "sentence_transformers",
+            reason="Optional dependency not installed in minimal environments",
+        )
+        SentenceTransformer = sentence_transformers.SentenceTransformer
         
         model = SentenceTransformer('all-MiniLM-L6-v2')
         text = "Senior Python Developer with machine learning experience"
@@ -44,7 +52,11 @@ class TestLocalEmbeddings:
     
     def test_cosine_similarity(self):
         """Test cosine similarity calculation"""
-        from sentence_transformers import SentenceTransformer
+        sentence_transformers = pytest.importorskip(
+            "sentence_transformers",
+            reason="Optional dependency not installed in minimal environments",
+        )
+        SentenceTransformer = sentence_transformers.SentenceTransformer
         from sklearn.metrics.pairwise import cosine_similarity
         import numpy as np
         

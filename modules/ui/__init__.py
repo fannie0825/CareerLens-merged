@@ -3,7 +3,7 @@
 NOTE: This module is maintained for backward compatibility.
 New code should import directly from the `ui` package:
 
-    from ui import main_analyzer_page, render_sidebar, ...
+    from ui import main_analyzer_page, ...
     from ui.components import display_job_card, display_market_positioning_profile, ...
 
 This module re-exports all symbols from the new `ui` package.
@@ -31,7 +31,6 @@ from ui import (
     process_resume_text,
     
     # Components
-    render_sidebar,
     render_hero_banner,
     display_job_card,
     display_user_profile,
@@ -49,7 +48,6 @@ from ui import (
 
 __all__ = [
     # Core UI components
-    'render_sidebar',
     'render_hero_banner',
     'display_job_card',
     'display_user_profile',
