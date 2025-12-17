@@ -39,10 +39,11 @@ def render_sidebar():
                     unsafe_allow_html=True
                 )
                 logo_displayed = True
-        except Exception:
+        except Exception as e:
             # Fallback
+            print(f"DEBUG: Sidebar logo base64 loading failed: {e}")
             if os.path.exists(logo_path):
-                st.image(logo_path, use_container_width=True)
+                st.image(logo_path, use_column_width=True)
                 logo_displayed = True
         
         st.markdown("""
