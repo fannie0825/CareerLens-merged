@@ -36,11 +36,7 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
         from core.semantic_search import SemanticJobSearch, fetch_jobs_with_cache
         from utils import get_embedding_generator, get_job_scraper
         from utils.config import _determine_index_limit
-        from ui.components.dashboard import (
-            display_market_positioning_profile,
-            calculate_match_scores,
-            display_refine_results_section  
-        )
+        from ui.components.dashboard import calculate_match_scores
         MODULES_AVAILABLE = True
     except ImportError:
         MODULES_AVAILABLE = False
@@ -77,7 +73,7 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
                     self.progress_bar.progress(progress, text=display_message)
 
     # Import visualization functions
-    from ui.visualizations import create_enhanced_visualizations, create_job_comparison_radar
+    from ui.visualizations import create_job_comparison_radar
     
     # Import resume generator UI
     try:
@@ -95,7 +91,7 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
     
     db = get_job_seeker_db()
     
-    st.title("💼 Job Search & Market Insights")
+    st.title("💼 Job Search")
 
     # Get job seeker data - add error handling
     job_seeker_data = dict()
@@ -482,97 +478,16 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
 
             # Display top matches
             _display_job_matches(matched_jobs, num_jobs_to_show, job_seeker_data)
+            
+            # Suggest next steps
+            st.markdown("---")
+            st.info("💡 **Next Step:** Go to the **Market Dashboard** to see detailed analysis, salary insights, and skill gaps based on these results.")
+            if st.button("📊 View Market Analysis", use_container_width=True):
+                st.session_state.current_page = "market_dashboard"
+                st.rerun()
 
         else:
             st.warning("⚠️ No matched jobs found. Please try adjusting your search criteria.")
-            
-    if matched_jobs and len(matched_jobs) > 0:
-        # Display CareerLens Market Positioning Dashboard
-        if MODULES_AVAILABLE:
-            display_market_positioning_profile(matched_jobs, job_seeker_data)
-        
-        current_job_seeker_id = st.session_state.get('job_seeker_id')
-    
-        if current_job_seeker_id:
-            try:
-                from database.job_post_api_db import MatchedJobsDB
-                matched_db = MatchedJobsDB()
-                cache_info = matched_db.get_recent_match_info(current_job_seeker_id, max_age_hours=24)
-                
-                if cache_info and cache_info.get('count', 0) > 0:
-                    cached_matches = matched_db.get_matched_jobs(
-                                current_job_seeker_id, 
-                                min_match=0, 
-                                purpose='general',
-                                limit=50
-                            )
-
-                    if cached_matches:
-                                # Convert DB format to display format
-                        processed_matches = []
-                        for job in cached_matches:
-                            processed_matches.append({
-                                        'job': {
-                                            'title': job.get('job_title', ''),
-                                            'company': job.get('company_name', ''),
-                                            'location': job.get('location', ''),
-                                            'description': job.get('job_description', ''),
-                                            'skills': [s.strip() for s in job.get('required_skills', '').split(',') if s.strip()],
-                                            'url': job.get('application_url', ''),
-                                            'posted_date': job.get('posted_date', ''),
-                                            'job_type': job.get('employment_type', ''),
-                                            'id': job.get('job_id', ''),
-                                            'salary_min': job.get("salary_min", 0),
-                                            'salary_max': job.get("salary_max", 0),
-                                            'industry': job.get("industry", ''),
-                                            'employment_type': job.get("employment_type", ''),
-                                            'posted_date': job.get("posted_date", '')
-                                        },
-                                        'combined_score': job.get('match_percentage', 0),
-                                        'semantic_score': (job.get('cosine_similarity_score', 0) or 0) * 100,
-                                        'skill_match_percentage': (job.get('skill_match_score', 0) or 0) * 100,
-                                        'matched_skills': [s.strip() for s in job.get('matched_skills', '').split(',') if s.strip()],
-                                        'missing_skills': [s.strip() for s in job.get('missing_skills', '').split(',') if s.strip()],
-                        })
-            except Exception as e:
-                # Silently continue if cache check fails
-                print(f"Cache check failed: {e}")
-                pass
-
-        # Create enhanced visualizations
-        create_enhanced_visualizations(processed_matches, job_seeker_data)
-        
-        # Create radar chart comparison for top jobs
-        # create_job_comparison_radar(matched_jobs)
-        
-        # Additional detailed analysis
-        st.markdown("---")
-        st.subheader("🔍 Deep Dive Analysis")
-        
-        # Industry distribution of matched jobs
-        industries = {}
-        for job in matched_jobs:
-            # Extract industry from company or description
-            company = job.get('company', '').lower()
-            if any(tech in company for tech in ['tech', 'software', 'ai', 'data']):
-                industry = 'Technology'
-            elif any(finance in company for finance in ['bank', 'finance', 'investment', 'capital']):
-                industry = 'Finance'
-            elif any(consult in company for consult in ['consulting', 'consultancy']):
-                industry = 'Consulting'
-            else:
-                industry = 'Other'
-            
-            industries[industry] = industries.get(industry, 0) + 1
-        
-        if industries:
-            st.markdown("#### 🏭 Industries in Your Matches")
-            for industry, count in industries.items():
-                percentage = (count / len(matched_jobs)) * 100
-                st.write(f"- **{industry}**: {count} jobs ({percentage:.1f}%)")
-
-    else:
-        st.warning("⚠️ No matched jobs found. Please try adjusting your search criteria.")
 
 
 def _prepare_job_for_storage(job_seeker_id: str, job: Dict) -> Dict:

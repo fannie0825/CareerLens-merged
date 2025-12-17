@@ -26,6 +26,7 @@ def market_dashboard_page():
             display_ranked_matches_table,
             display_match_breakdown
         )
+        from ui.visualizations import create_enhanced_visualizations
         MODULES_AVAILABLE = True
     except ImportError as e:
         MODULES_AVAILABLE = False
@@ -73,6 +74,42 @@ def market_dashboard_page():
             st.session_state.matched_jobs,
             st.session_state.get('user_profile', {})
         )
+        
+        # Create enhanced visualizations
+        create_enhanced_visualizations(
+            st.session_state.matched_jobs, 
+            st.session_state.get('user_profile', {})
+        )
+        
+        # Additional detailed analysis
+        st.markdown("---")
+        st.subheader("🔍 Deep Dive Analysis")
+        
+        # Industry distribution of matched jobs
+        matched_jobs = st.session_state.matched_jobs
+        industries = {}
+        for job in matched_jobs:
+            # Handle both nested 'job' structure and direct job properties
+            job_data = job.get('job', job)
+            
+            # Extract industry from company or description
+            company = job_data.get('company', '').lower()
+            if any(tech in company for tech in ['tech', 'software', 'ai', 'data']):
+                industry = 'Technology'
+            elif any(finance in company for finance in ['bank', 'finance', 'investment', 'capital']):
+                industry = 'Finance'
+            elif any(consult in company for consult in ['consulting', 'consultancy']):
+                industry = 'Consulting'
+            else:
+                industry = 'Other'
+            
+            industries[industry] = industries.get(industry, 0) + 1
+        
+        if industries:
+            st.markdown("#### 🏭 Industries in Your Matches")
+            for industry, count in industries.items():
+                percentage = (count / len(matched_jobs)) * 100
+                st.write(f"- **{industry}**: {count} jobs ({percentage:.1f}%)")
         
         # Display Smart Ranked Matches Table (Middle Section)
         display_ranked_matches_table(
