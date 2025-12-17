@@ -300,19 +300,27 @@ def display_token_usage():
 
     logo_displayed = False
     
-    # Robust image loading
-    try:
-        if os.path.exists(logo_path):
-            from PIL import Image
-            # Open with PIL to ensure it's loaded correctly
-            image = Image.open(logo_path)
-            st.sidebar.image(image, use_container_width=True)
+    # Robust image loading using Base64 to prevent disappearance
+    # This embeds the image directly in the HTML, bypassing filesystem/serving issues
+    if os.path.exists(logo_path):
+        try:
+            import base64
+            with open(logo_path, "rb") as f:
+                data = f.read()
+                logo_base64 = base64.b64encode(data).decode()
+            
+            st.sidebar.markdown(
+                f'<img src="data:image/png;base64,{logo_base64}" style="width: 100%; max-width: 100%; margin-bottom: 20px;">',
+                unsafe_allow_html=True
+            )
             logo_displayed = True
-    except Exception as e:
-        # Fallback to simple path if PIL fails
-        if os.path.exists(logo_path):
-            st.sidebar.image(logo_path, use_container_width=True)
-            logo_displayed = True
+        except Exception as e:
+            # Fallback to standard Streamlit image if base64 fails
+            try:
+                st.sidebar.image(logo_path, use_container_width=True)
+                logo_displayed = True
+            except Exception:
+                pass
 
     st.sidebar.markdown("""
     <style>

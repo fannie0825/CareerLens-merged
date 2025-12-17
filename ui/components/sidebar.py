@@ -27,12 +27,20 @@ def render_sidebar():
             
         logo_displayed = False
         try:
-            from PIL import Image
+            # Use Base64 embedding for robustness (same as streamlit_app.py)
             if os.path.exists(logo_path):
-                image = Image.open(logo_path)
-                st.image(image, use_container_width=True)
+                import base64
+                with open(logo_path, "rb") as f:
+                    data = f.read()
+                    logo_base64 = base64.b64encode(data).decode()
+                
+                st.markdown(
+                    f'<img src="data:image/png;base64,{logo_base64}" style="width: 100%; max-width: 100%; margin-bottom: 20px;">',
+                    unsafe_allow_html=True
+                )
                 logo_displayed = True
         except Exception:
+            # Fallback
             if os.path.exists(logo_path):
                 st.image(logo_path, use_container_width=True)
                 logo_displayed = True
