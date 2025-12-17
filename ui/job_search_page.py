@@ -236,88 +236,121 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
                     st.write(f"• {strength}")
 
     # ----------------------------------------
-    # 🔍 Job Search Settings
+    # 🛠️ Refine Results (main content filters)
     # ----------------------------------------
-    st.subheader("🔍 Job Search Settings")
+    with st.expander("🛠️ Refine Results", expanded=True):
+        # Domain + salary filters (single source of truth: main content)
+        domain_options = [
+            "FinTech",
+            "ESG & Sustainability",
+            "Data Analytics",
+            "Digital Transformation",
+            "Investment Banking",
+            "Consulting",
+            "Technology",
+            "Healthcare",
+            "Education",
+        ]
 
-    # Pre-fill defaults using job seeker data
-    default_search = (
-        job_seeker_data.get("primary_role", "")
-        or job_seeker_data.get("simple_search_terms", "Python developer")
-    )
-
-    default_location = job_seeker_data.get("location_preference", "Hong Kong")
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        search_query = st.text_input(
-            "Job Keywords*",
-            value=default_search,
-            placeholder="e.g.: software engineer, data analyst"
+        target_domains = st.multiselect(
+            "Target domains",
+            options=domain_options,
+            default=st.session_state.get("target_domains", []),
+            key="job_search_target_domains",
+            help="Optional: use this to bias search and post-filter results.",
         )
+        st.session_state.target_domains = target_domains
 
-    with col2:
-        location = st.text_input(
-            "City/Region",
-            value=default_location,
-            placeholder="e.g.: New York, London"
+        salary_expectation = st.slider(
+            "Min. salary (HKD)",
+            min_value=0,
+            max_value=150000,
+            value=int(st.session_state.get("salary_expectation", 0) or 0),
+            step=5000,
+            key="job_search_salary_expectation",
+            help="Set to 0 to disable salary filtering.",
         )
+        st.session_state.salary_expectation = salary_expectation
 
-    with col3:
-        country = st.selectbox(
-            "Country Code",
-            ["hk", "us", "gb", "ca", "au", "sg"],
-            index=0
+        st.divider()
+
+        # ----------------------------------------
+        # 🔍 Job Search Settings
+        # ----------------------------------------
+        # Pre-fill defaults using job seeker data
+        default_search = (
+            job_seeker_data.get("primary_role", "")
+            or job_seeker_data.get("simple_search_terms", "Python developer")
         )
+        default_location = job_seeker_data.get("location_preference", "Hong Kong")
 
-    col4, = st.columns(1)
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            search_query = st.text_input(
+                "Job Keywords*",
+                value=default_search,
+                placeholder="e.g.: software engineer, data analyst",
+                key="job_search_keywords",
+            )
+        with col2:
+            location = st.text_input(
+                "City/Region",
+                value=default_location,
+                placeholder="e.g.: New York, London",
+                key="job_search_location",
+            )
+        with col3:
+            country = st.selectbox(
+                "Country Code",
+                ["hk", "us", "gb", "ca", "au", "sg"],
+                index=0,
+                key="job_search_country",
+            )
 
-    with col4:
         employment_types = st.multiselect(
             "Employment Type",
             ["FULLTIME", "PARTTIME", "CONTRACTOR"],
-            default=["FULLTIME"]
+            default=["FULLTIME"],
+            key="job_search_employment_types",
         )
 
-    # ----------------------------------------
-    # 🔧 Search Speed Options
-    # ----------------------------------------
-    st.markdown("##### ⚡ Search Mode")
-    
-    search_mode = st.radio(
-        "Choose search speed:",
-        ["⚡ Quick Search (15 jobs)", "🔍 Standard Search (25 jobs)", "🔬 Deep Search (40 jobs)"],
-        index=0,
-        horizontal=True,
-        help="Quick = faster results, Deep = more comprehensive but slower"
-    )
-    
-    # Map search mode to job count
-    search_mode_map = {
-        "⚡ Quick Search (15 jobs)": 15,
-        "🔍 Standard Search (25 jobs)": 25,
-        "🔬 Deep Search (40 jobs)": 40
-    }
-    num_jobs_to_search = search_mode_map.get(search_mode, 15)
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        num_jobs_to_show = st.slider(
-            "Top matches to display", 
-            3, 15, 5,
-            key="jobs_show_slider"
+        # ----------------------------------------
+        # 🔧 Search Speed Options
+        # ----------------------------------------
+        st.markdown("##### ⚡ Search Mode")
+
+        search_mode = st.radio(
+            "Choose search speed:",
+            ["⚡ Quick Search (15 jobs)", "🔍 Standard Search (25 jobs)", "🔬 Deep Search (40 jobs)"],
+            index=0,
+            horizontal=True,
+            help="Quick = faster results, Deep = more comprehensive but slower",
+            key="job_search_speed",
         )
-    
-    with col2:
-        # Show estimated time based on search mode
-        time_estimates = {
-            "⚡ Quick Search (15 jobs)": "~30-60 seconds",
-            "🔍 Standard Search (25 jobs)": "~60-90 seconds",
-            "🔬 Deep Search (40 jobs)": "~90-120 seconds"
+
+        # Map search mode to job count
+        search_mode_map = {
+            "⚡ Quick Search (15 jobs)": 15,
+            "🔍 Standard Search (25 jobs)": 25,
+            "🔬 Deep Search (40 jobs)": 40,
         }
-        st.info(f"⏱️ Estimated time: {time_estimates.get(search_mode, '~60 seconds')}")
+        num_jobs_to_search = search_mode_map.get(search_mode, 15)
+
+        col1, col2 = st.columns(2)
+        with col1:
+            num_jobs_to_show = st.slider(
+                "Top matches to display",
+                3, 15, 5,
+                key="jobs_show_slider",
+            )
+        with col2:
+            # Show estimated time based on search mode
+            time_estimates = {
+                "⚡ Quick Search (15 jobs)": "~30-60 seconds",
+                "🔍 Standard Search (25 jobs)": "~60-90 seconds",
+                "🔬 Deep Search (40 jobs)": "~90-120 seconds",
+            }
+            st.info(f"⏱️ Estimated time: {time_estimates.get(search_mode, '~60 seconds')}")
 
     # -------------------------------------------------------
     # 🔎 STEP 0: Check for Cached Matches (Optimization)
@@ -414,6 +447,11 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
                     search_keywords = search_query if search_query.strip() else job_seeker_data.get("primary_role", "")
                     if not search_keywords:
                         search_keywords = job_seeker_data.get("simple_search_terms", "Hong Kong jobs")
+
+                    # If the user selected domains, bias the upstream fetch keywords too.
+                    selected_domains = st.session_state.get("target_domains", [])
+                    if selected_domains:
+                        search_keywords = f"{search_keywords} {' '.join(selected_domains)}"
                     
                     location_preference = location if location else job_seeker_data.get("location_preference", "Hong Kong")
                     
@@ -453,6 +491,27 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
                             )
                             matched_jobs = []
                         else:
+                            # Optional post-filters from the Refine Results panel
+                            try:
+                                from core.domain_filter import filter_jobs_by_domains
+                                from core.salary_analyzer import filter_jobs_by_salary
+                            except Exception:
+                                filter_jobs_by_domains = None
+                                filter_jobs_by_salary = None
+
+                            if st.session_state.get("target_domains") and filter_jobs_by_domains:
+                                jobs = filter_jobs_by_domains(jobs, st.session_state.get("target_domains", []))
+
+                            if st.session_state.get("salary_expectation", 0) and filter_jobs_by_salary:
+                                jobs = filter_jobs_by_salary(jobs, st.session_state.get("salary_expectation", 0))
+
+                            if not jobs:
+                                st.warning("⚠️ No jobs matched your Refine Results filters. Try lowering constraints.")
+                                matched_jobs = []
+                                tracker.update(6, "No jobs matched filters.")
+                                _websocket_keepalive("No jobs matched filters")
+                                st.rerun()
+
                             # ----------------------------------------------------
                             # 3) Initialize SemanticJobSearch and index jobs
                             # ----------------------------------------------------
