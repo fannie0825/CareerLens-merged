@@ -449,24 +449,6 @@ with st.sidebar:
     display_token_usage()
     
     st.markdown("---")
-    st.subheader("🔧 Database Debug")
-    
-    if st.button("View All Job Seeker Records"):
-        try:
-            conn = sqlite3.connect('job_seeker.db')
-            c = conn.cursor()
-            c.execute("SELECT job_seeker_id, timestamp, education_level, primary_role FROM job_seekers ORDER BY id DESC")
-            results = c.fetchall()
-            conn.close()
-            
-            if results:
-                st.write("📋 All Job Seeker Records:")
-                for record in results:
-                    st.write(f"- ID: {record[0]}, Time: {record[1]}, Education: {record[2]}, Role: {record[3]}")
-            else:
-                st.write("No job seeker records yet")
-        except Exception as e:
-            st.error(f"Query failed: {e}")
     
     # Display current session state
     current_id = st.session_state.get('job_seeker_id')
