@@ -29,10 +29,12 @@ def recruitment_match_dashboard():
     with col3:
         st.metric("Match Ready", "✅" if jobs and seekers else "❌")
 
-    # Page selection
-    page_option = st.sidebar.radio(
-        "Select Function",
-        ["Smart Talent Matching", "Match Statistics", "Instructions"]
+    # Page selection (main content, not sidebar — avoid double sidebar navigation)
+    page_option = st.radio(
+        "Select function",
+        ["Smart Talent Matching", "Match Statistics", "Instructions"],
+        horizontal=True,
+        key="recruitment_match_section",
     )
 
     if page_option == "Smart Talent Matching":

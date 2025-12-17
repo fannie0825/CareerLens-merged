@@ -430,10 +430,8 @@ with st.sidebar.expander(
         )
         st.session_state.salary_expectation = salary_exp
 
-    if st.session_state.current_page == "market_dashboard" and st.session_state.get("user_profile"):
-        display_skill_matching_matrix(st.session_state.user_profile)
-
-    display_token_usage()
+    # Keep sidebar user-facing: avoid showing developer/technical panels here.
+    # (Ranking explanation + token usage are intentionally not displayed in the sidebar.)
 
 active_job = st.session_state.get("selected_job")
 if active_job:
@@ -460,7 +458,7 @@ if active_job:
 current_id = st.session_state.get("job_seeker_id")
 if current_id:
     with st.sidebar.expander("Session", expanded=False):
-        st.info(f"Current Session ID: **{current_id}**")
+        st.caption(f"Session ID: `{current_id}`")
 if not MODULES_AVAILABLE:
     st.error("❌ Page modules not available. Please ensure the modules/ui/pages directory is properly installed.")
     st.info("Falling back to basic functionality...")

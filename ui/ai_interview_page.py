@@ -456,10 +456,12 @@ def ai_interview_dashboard():
         else:
             st.metric("Interview Status", "Not Started")
 
-    # Page selection
-    page_option = st.sidebar.radio(
-        "Select Function",
-        ["Start Mock Interview", "Interview Preparation Guide", "Instructions"]
+    # Page selection (main content, not sidebar — avoid double sidebar navigation)
+    page_option = st.radio(
+        "Select function",
+        ["Start Mock Interview", "Interview Preparation Guide", "Instructions"],
+        horizontal=True,
+        key="ai_interview_section",
     )
 
     if page_option == "Start Mock Interview":
