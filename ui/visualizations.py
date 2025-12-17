@@ -8,6 +8,7 @@ skill distributions, and comparative charts.
 import streamlit as st  # pyright: ignore[reportMissingImports]
 from collections import Counter
 import datetime
+import re
 from typing import Dict, List
 
 # Lazy imports for heavy visualization libraries
@@ -79,6 +80,59 @@ def apply_chart_theme(fig):
     return fig
 
 
+def infer_seniority_bucket(job: dict) -> str:
+    """
+    Infer a coarse seniority bucket from job fields.
+
+    Buckets:
+    - Entry / Associate
+    - Mid-level
+    - Senior
+    - Lead / Manager
+    - Unknown
+    """
+    title = (job.get("title") or job.get("job_title") or "")
+    exp_level = job.get("experience_level") or ""
+    description = job.get("description") or job.get("job_description") or ""
+
+    # Normalize text (avoid None issues)
+    t = f"{title} {exp_level}".lower()
+    d = str(description).lower()
+
+    # Title-based inference (most reliable + cheapest)
+    # Order matters: "senior manager" should map to Lead / Manager, not Senior.
+    if re.search(r"\b(lead|manager|head|principal|director|vp|vice president|chief)\b", t):
+        return "Lead / Manager"
+    if re.search(r"\b(senior|sr\.?|staff)\b", t):
+        return "Senior"
+    if re.search(r"\b(mid(?:-|\s)?level|intermediate)\b", t):
+        return "Mid-level"
+    if re.search(r"\b(intern|junior|jr\.?|associate|entry(?:-|\s)?level|graduate|grad)\b", t):
+        return "Entry / Associate"
+
+    # Years-required inference from description (fallback)
+    # Examples: "3+ years", "5 years of experience", "2 yrs experience", "5-7 years"
+    years_matches = re.findall(r"\b(\d{1,2})\s*(?:\+)?\s*(?:years|yrs)\b", d)
+    years = None
+    if years_matches:
+        try:
+            years = min(int(x) for x in years_matches)
+        except Exception:
+            years = None
+
+    if years is not None:
+        if years <= 2:
+            return "Entry / Associate"
+        if 3 <= years <= 5:
+            return "Mid-level"
+        if 6 <= years <= 8:
+            return "Senior"
+        if years >= 9:
+            return "Lead / Manager"
+
+    return "Unknown"
+
+
 def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
     if not matched_jobs or len(matched_jobs) == 0:
         st.info("No matched jobs available for visualization.")
@@ -95,10 +149,10 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
     avg_salaries = []
     salary_labels = []
     industries = []
-    employment_types = []
     posting_dates = []
     skill_match_counts = []
     missing_skill_counts = []
+    seniority_buckets = []
 
     for j in matched_jobs:
         job = j.get("job", j)
@@ -132,14 +186,16 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
         avg_salaries.append(salary)
         salary_labels.append(labelstr)
 
-        # Industry & employment type
+        # Industry
         industries.append(job.get("industry", "N/A"))
-        employment_types.append(job.get("employment_type", "N/A"))
 
         # Post date
         dtxt = job.get("posted_date")
         if dtxt:
             posting_dates.append(str(dtxt))
+
+        # Seniority / experience level (inferred)
+        seniority_buckets.append(infer_seniority_bucket(job))
 
         # Skills
         skill_val = j.get("matched_skills")
@@ -178,15 +234,36 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
         salary_fig = apply_chart_theme(salary_fig)
         st.plotly_chart(salary_fig, width="stretch")
     """
-    # 4. Employment Type Frequencies
-    st.subheader("Employment Type Frequencies")
-    etypes = [e for e in employment_types if e and e != "N/A"]
-    if etypes:
-        emp_ct = Counter(etypes)
-        fig = go.Figure([go.Bar(x=list(emp_ct.keys()), y=list(emp_ct.values()))])
-        fig.update_layout(yaxis_title="Number of Jobs")
+    # 4. Seniority / Experience Level Distribution
+    st.subheader("Seniority / Experience Level Distribution")
+    st.caption("Question it answers: **At what level is the market currently valuing you?**")
+    buckets = [b for b in seniority_buckets if b and b != "Unknown"]
+    if buckets:
+        bucket_ct = Counter(buckets)
+        ordered = ["Entry / Associate", "Mid-level", "Senior", "Lead / Manager"]
+        labels = [b for b in ordered if b in bucket_ct]
+        values = [bucket_ct[b] for b in labels]
+
+        dominant_bucket = bucket_ct.most_common(1)[0][0] if bucket_ct else None
+        if dominant_bucket:
+            st.write(f"Market signal: your matched roles skew **{dominant_bucket}**.")
+
+        fig = go.Figure(
+            data=[
+                go.Pie(
+                    labels=labels,
+                    values=values,
+                    hole=0.45,
+                    sort=False,
+                    textinfo="label+percent",
+                )
+            ]
+        )
+        fig.update_layout(showlegend=True)
         fig = apply_chart_theme(fig)
         st.plotly_chart(fig, width="stretch")
+    else:
+        st.caption("Not enough job data to infer seniority buckets (missing titles/experience signals).")
 
     # 5. Posting Date Histogram
     if posting_dates:
