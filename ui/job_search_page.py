@@ -718,7 +718,13 @@ def _normalize_job_for_session(job: Dict, *, fallback_id: Optional[str] = None) 
     location = job.get("location") or "Unknown Location"
     description = job.get("description") or job.get("job_description") or ""
     url = job.get("url") or job.get("application_url") or job.get("job_url") or "#"
+
+    # Normalize skills so downstream pages can safely treat this as List[str]
     skills = job.get("skills") or job.get("required_skills") or []
+    if isinstance(skills, str):
+        skills = [s.strip() for s in skills.split(",") if s.strip()]
+    elif not isinstance(skills, list):
+        skills = []
 
     normalized = dict(job)
     normalized.update(
@@ -851,8 +857,12 @@ def _display_job_matches(matched_jobs: List[Dict], num_jobs_to_show: int, job_se
             # Matched skills (candidate has) - from result, not job
             matched_skills = result.get("matched_skills", job.get("matched_skills", []))
 
-            # Required skills from job (assumes this field exists as a list)
-            required_skills = job.get("required_skills", [])
+            # Required skills from job: canonical field is `skills` in this app.
+            required_skills = job.get("required_skills") or job.get("skills") or []
+            if isinstance(required_skills, str):
+                required_skills = [s.strip() for s in required_skills.split(",") if s.strip()]
+            elif not isinstance(required_skills, list):
+                required_skills = []
 
             # Skills to improve: required but NOT matched
             skills_to_improve = []
@@ -969,7 +979,8 @@ def _display_job_matches(matched_jobs: List[Dict], num_jobs_to_show: int, job_se
                     st.rerun()
 
             # Show resume generator if selected
-            if st.session_state.get('show_resume_generator') and st.session_state.get('selected_job_for_resume', {}).get('id') == job.get('id'):
+            _selected_for_resume = st.session_state.get('selected_job_for_resume') or {}
+            if st.session_state.get('show_resume_generator') and isinstance(_selected_for_resume, dict) and _selected_for_resume.get('id') == job.get('id'):
                 with st.container():
                     st.markdown("---")
                     if RESUME_AVAILABLE:

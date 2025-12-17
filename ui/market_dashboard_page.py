@@ -62,7 +62,7 @@ def market_dashboard_page():
         # Render hero banner at the top of main content
         render_hero_banner(
             st.session_state.get('user_profile', {}),
-            st.session_state.get('matched_jobs')
+            st.session_state.get('matched_jobs', [])
         )
 
         # ---------------------------------------------------------------------
