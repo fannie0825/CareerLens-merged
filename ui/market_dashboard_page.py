@@ -15,7 +15,6 @@ def market_dashboard_page():
     """Your Market Position Page - Modular CareerLens Dashboard"""
     # Check if modules are available
     try:
-        from utils import _cleanup_session_state, validate_secrets
         from utils.config import get_num_jobs_to_search
         from ui.components.styles import render_styles
         from ui.components import (
@@ -42,6 +41,44 @@ def market_dashboard_page():
 
         # Page header (fast)
         st.title("📊 Your Market Position")
+
+        # ---------------------------------------------------------------------
+        # Refresh guard: rehydrate user_profile if the session was refreshed
+        # ---------------------------------------------------------------------
+        user_profile = st.session_state.get("user_profile")
+        needs_profile = (not isinstance(user_profile, dict)) or (not user_profile)
+        if not needs_profile and isinstance(user_profile, dict):
+            # Treat a profile as "missing" if it doesn't contain any core fields.
+            needs_profile = not any(
+                [
+                    user_profile.get("name"),
+                    user_profile.get("hard_skills"),
+                    user_profile.get("skills"),
+                    user_profile.get("work_experience"),
+                    user_profile.get("experience"),
+                ]
+            )
+
+        if needs_profile:
+            job_seeker_id = st.session_state.get("job_seeker_id")
+            if job_seeker_id:
+                try:
+                    from database import JobSeekerDB
+
+                    db = JobSeekerDB()
+                    hydrated = db.get_profile(job_seeker_id) or {}
+                    if isinstance(hydrated, dict) and hydrated:
+                        # Provide a few aliases expected by UI components.
+                        if not hydrated.get("skills") and hydrated.get("hard_skills"):
+                            hydrated["skills"] = hydrated.get("hard_skills", "")
+                        if not hydrated.get("experience") and hydrated.get("work_experience"):
+                            hydrated["experience"] = hydrated.get("work_experience", "")
+
+                        st.session_state.user_profile = hydrated
+                        user_profile = hydrated
+                except Exception:
+                    # Don't block dashboard rendering if profile rehydration fails.
+                    pass
 
         # =========================================================
         # Smart entry: show focused context if arriving from Job Search
