@@ -216,7 +216,7 @@ def ai_interview_page():
         return
 
     if not st.session_state.get("interview_started", False):
-        if st.button("🚀 Start Interview", type="primary", use_container_width=True):
+        if st.button("🚀 Start Interview", type="primary", width="stretch"):
             st.session_state.interview_started = True
             st.session_state.interview = initialize_interview_session(selected_job)
 
@@ -250,7 +250,7 @@ def ai_interview_page():
                                 placeholder="Please describe your answer in detail...",
                                 key=f"answer_{interview['current_question']}")
 
-            if st.button("📤 Submit Answer", type="primary", use_container_width=True):
+            if st.button("📤 Submit Answer", type="primary", width="stretch"):
                 if answer.strip():
                     with st.spinner("AI is evaluating your answer..."):
                         # Evaluate current answer
@@ -364,7 +364,7 @@ def ai_interview_page():
                     st.markdown("---")
 
             # Restart interview
-            if st.button("🔄 Restart Interview", use_container_width=True):
+            if st.button("🔄 Restart Interview", width="stretch"):
                 del st.session_state.interview
                 if 'interview_started' in st.session_state:
                     del st.session_state.interview_started

@@ -170,7 +170,7 @@ def publish_new_job():
                                       value=datetime.now().date() + timedelta(days=30))
 
         # Submit button
-        submitted = st.form_submit_button("💾 Publish Position", type="primary", use_container_width=True)
+        submitted = st.form_submit_button("💾 Publish Position", type="primary", width="stretch")
 
         if submitted:
             # Validate required fields

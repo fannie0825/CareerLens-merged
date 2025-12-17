@@ -69,9 +69,9 @@ def display_job_card(result, index):
         col2a, col2b = st.columns(2)
         with col2a:
             if job['url'] != '#':
-                st.link_button("Apply →", job['url'], use_container_width=True)
+                st.link_button("Apply →", job['url'], width="stretch")
         with col2b:
-            if st.button("📄 Resume", key=f"resume_{index}", use_container_width=True, type="primary"):
+            if st.button("📄 Resume", key=f"resume_{index}", width="stretch", type="primary"):
                 st.session_state.selected_job = job
                 st.session_state.show_resume_generator = True
                 st.session_state.current_page = "tailored_resume"

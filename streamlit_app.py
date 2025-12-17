@@ -377,61 +377,24 @@ PAGE_OPTIONS = {
     "🎯 Recruiter • Job Posting": "head_hunter",
     "🎯 Recruiter • Recruitment Match": "recruitment_match",
 }
-_page_to_label = {v: k for k, v in PAGE_OPTIONS.items()}
-_nav_labels = list(PAGE_OPTIONS.keys())
-_default_label = _page_to_label.get(st.session_state.get("current_page", "main"), _nav_labels[0])
-_default_index = _nav_labels.index(_default_label) if _default_label in _nav_labels else 0
+if st.session_state.get("current_page") not in PAGE_OPTIONS.values():
+    st.session_state.current_page = "main"
 
-# Keep the navigation widget in sync when other UI actions change `current_page`
-if (
-    st.session_state.get("sidebar_nav") not in _nav_labels
-    or PAGE_OPTIONS.get(st.session_state.get("sidebar_nav")) != st.session_state.get("current_page")
-):
-    st.session_state.sidebar_nav = _default_label
+st.sidebar.subheader("Navigation")
 
-selected_label = st.sidebar.radio(
-    "Navigation",
-    _nav_labels,
-    index=_default_index,
-    key="sidebar_nav",
-)
-st.session_state.current_page = PAGE_OPTIONS[selected_label]
+def _go_to(page_key: str):
+    st.session_state.current_page = page_key
+    st.rerun()
 
-with st.sidebar.expander(
-    "Filters & tools",
-    expanded=st.session_state.current_page in {"job_recommendations", "market_dashboard"},
-):
-    if st.session_state.current_page == "job_recommendations":
-        target_domains = st.multiselect(
-            "Target domains",
-            options=[
-                "FinTech",
-                "ESG & Sustainability",
-                "Data Analytics",
-                "Digital Transformation",
-                "Investment Banking",
-                "Consulting",
-                "Technology",
-                "Healthcare",
-                "Education",
-            ],
-            default=st.session_state.get("target_domains", []),
-            key="sidebar_domain_filter",
-        )
-        st.session_state.target_domains = target_domains
-
-        salary_exp = st.slider(
-            "Min. salary (HKD)",
-            min_value=0,
-            max_value=150000,
-            value=st.session_state.get("salary_expectation", 0),
-            step=5000,
-            key="sidebar_salary_filter",
-        )
-        st.session_state.salary_expectation = salary_exp
-
-    # Keep sidebar user-facing: avoid showing developer/technical panels here.
-    # (Ranking explanation + token usage are intentionally not displayed in the sidebar.)
+for label, page_key in PAGE_OPTIONS.items():
+    is_current = st.session_state.get("current_page") == page_key
+    if st.sidebar.button(
+        label,
+        key=f"nav_btn_{page_key}",
+        disabled=is_current,
+        width="stretch",
+    ):
+        _go_to(page_key)
 
 active_job = st.session_state.get("selected_job")
 if active_job:
