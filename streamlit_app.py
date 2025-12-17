@@ -380,17 +380,48 @@ PAGE_OPTIONS = {
 if st.session_state.get("current_page") not in PAGE_OPTIONS.values():
     st.session_state.current_page = "main"
 
-st.sidebar.subheader("Navigation")
-
 def _go_to(page_key: str):
     st.session_state.current_page = page_key
     st.rerun()
 
-for label, page_key in PAGE_OPTIONS.items():
+# --- SIDEBAR NAV (button-based, grouped) ---
+st.sidebar.markdown("### 👤 Job Seeker")
+
+_job_seeker_nav = [
+    ("🏠 Job Seeker", "main"),
+    ("💼 Job Search", "job_recommendations"),
+    ("📄 AI Powered Tailored Resume", "tailored_resume"),
+    ("🤖 AI Mock Interview", "ai_interview"),
+    ("📊 Market Dashboard", "market_dashboard"),
+    ("🧠 How This App Works", "how_it_works"),
+]
+
+for label, page_key in _job_seeker_nav:
     is_current = st.session_state.get("current_page") == page_key
     if st.sidebar.button(
         label,
         key=f"nav_btn_{page_key}",
+        type="primary",
+        disabled=is_current,
+        width="stretch",
+    ):
+        _go_to(page_key)
+
+st.sidebar.divider()
+
+st.sidebar.markdown("### 🎯 Recruiter")
+
+_recruiter_nav = [
+    ("📋 Job Posting", "head_hunter"),
+    ("🤝 Recruitment Match", "recruitment_match"),
+]
+
+for label, page_key in _recruiter_nav:
+    is_current = st.session_state.get("current_page") == page_key
+    if st.sidebar.button(
+        label,
+        key=f"nav_btn_{page_key}",
+        type="secondary",
         disabled=is_current,
         width="stretch",
     ):
