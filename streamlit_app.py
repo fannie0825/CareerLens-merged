@@ -397,7 +397,7 @@ st.sidebar.markdown("---")
 st.sidebar.markdown('<div class="nav-section-header" style="color: black !important;">👤 Job Seeker</div>', unsafe_allow_html=True)
 if st.sidebar.button("🏠 Job Seeker", use_container_width=True, key="main_btn"):
     st.session_state.current_page = "main"
-if st.sidebar.button("💼 Job Matching", use_container_width=True, key="job_matching_btn"):
+if st.sidebar.button("💼 Job Search", use_container_width=True, key="job_matching_btn"):
     st.session_state.current_page = "job_recommendations"
 if st.sidebar.button("📝 AI Powered Tailored Resume", use_container_width=True, key="tailored_resume_btn"):
     st.session_state.current_page = "tailored_resume"
@@ -529,7 +529,7 @@ st.sidebar.markdown("""
 
 **For Job Seekers:**
 - **Job Seeker**: Upload your CV and fill in your profile
-- **Job Matching**: Find AI-matched positions based on your profile
+- **Job Search**: Find AI-matched positions based on your profile
 - **AI Powered Tailored Resume**: Generate job-specific resumes
 - **AI Mock Interview**: Practice with AI-powered mock interviews
 - **Market Dashboard**: View comprehensive market insights
