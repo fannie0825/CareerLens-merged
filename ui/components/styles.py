@@ -103,6 +103,7 @@ def render_styles():
         /* Apply fonts globally */
         body, .stText, [data-testid="stMarkdownContainer"] p, .stMarkdown {
             font-family: 'Inter', sans-serif !important;
+            font-size: 15px !important; /* Slightly reduced base font size */
         }
         h1, h2, h3, h4, h5, h6, .stButton > button, [data-testid="stHeader"] {
             font-family: 'Montserrat', sans-serif !important;
@@ -208,11 +209,14 @@ def render_styles():
             background: var(--accent-gradient) !important;
             color: #FFFFFF !important;
             font-family: 'Montserrat', sans-serif;
-            font-weight: 700 !important;
+            font-weight: 600 !important;
+            font-size: 14px !important;
             border: none !important;
             border-radius: 50px !important;
             box-shadow: 0 0 20px rgba(0, 210, 255, 0.4);
             transition: all 0.3s ease;
+            padding-top: 0.5rem !important;
+            padding-bottom: 0.5rem !important;
         }
         [data-testid="stSidebar"] .stButton > button:hover {
             box-shadow: 0 0 30px rgba(0, 210, 255, 0.6) !important;
@@ -498,6 +502,18 @@ def render_styles():
         .info-banner p {
             margin: 0.5rem 0 0 0;
             opacity: 0.9;
+        }
+
+        /* Streamlit Alert Styling for Coherence */
+        [data-testid="stAlert"] {
+            border-radius: 12px !important;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        /* Enhance Spinner to match Brand Glow */
+        [data-testid="stSpinner"] > div {
+            border-top-color: var(--brand-glow) !important;
         }
     </style>
     <div id="ws-reconnecting-overlay" class="ws-reconnecting-overlay">
