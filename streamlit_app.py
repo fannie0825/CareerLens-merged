@@ -424,6 +424,19 @@ for label, page_key in _recruiter_nav:
         width="stretch",
     ):
         _go_to(page_key)
+
+# ---------------------------------------------------------------------------
+# THE SHORT CIRCUIT
+# If the user just changed pages, stop and rerun immediately so we don't
+# continue rendering the previous page's heavy UI in the same cycle.
+# ---------------------------------------------------------------------------
+if "previous_page" not in st.session_state:
+    st.session_state.previous_page = st.session_state.current_page
+
+if st.session_state.previous_page != st.session_state.current_page:
+    st.session_state.previous_page = st.session_state.current_page
+    st.rerun()
+
 if not MODULES_AVAILABLE:
     st.error("❌ Page modules not available. Please ensure the modules/ui/pages directory is properly installed.")
     st.info("Falling back to basic functionality...")
