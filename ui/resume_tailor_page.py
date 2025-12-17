@@ -116,11 +116,11 @@ def tailored_resume_page():
             
             col1, col2 = st.columns(2)
             with col1:
-                if st.button("📊 Go to Job Search", use_container_width=True):
+                if st.button("📊 Go to Job Search", width="stretch"):
                     st.session_state.current_page = "job_recommendations"
                     st.rerun()
             with col2:
-                if st.button("🏠 Go to Job Seeker", use_container_width=True):
+                if st.button("🏠 Go to Job Seeker", width="stretch"):
                     st.session_state.current_page = "main"
                     st.rerun()
             return
@@ -164,7 +164,7 @@ def tailored_resume_page():
             3. All matched jobs will be saved automatically
             4. Return here to generate tailored resumes
             """)
-            if st.button("🔍 Go to Job Search", use_container_width=True):
+            if st.button("🔍 Go to Job Search", width="stretch"):
                 st.session_state.current_page = "job_recommendations"
                 st.rerun()
         
@@ -233,7 +233,7 @@ def _display_job_selection(jobs: List[Dict], source: str = "session"):
                 else:
                     st.markdown(f"🟠 **{match_pct:.0f}%**")
             with col3:
-                if st.button("✨ Tailor", key=f"tailor_{source}_{i}", use_container_width=True):
+                if st.button("✨ Tailor", key=f"tailor_{source}_{i}", width="stretch"):
                     # Prepare job for resume generator
                     if source == "db":
                         # Convert DB format to expected format

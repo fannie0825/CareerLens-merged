@@ -365,8 +365,6 @@ st.sidebar.markdown("""
 <div class="careerlens-tagline">AI Career Copilot • Hong Kong</div>
 """, unsafe_allow_html=True)
 
-st.sidebar.markdown("---")
-
 PAGE_OPTIONS = {
     "👤 Job Seeker": "main",
     "💼 Job Search": "job_recommendations",
@@ -377,90 +375,55 @@ PAGE_OPTIONS = {
     "🎯 Recruiter • Job Posting": "head_hunter",
     "🎯 Recruiter • Recruitment Match": "recruitment_match",
 }
-_page_to_label = {v: k for k, v in PAGE_OPTIONS.items()}
-_nav_labels = list(PAGE_OPTIONS.keys())
-_default_label = _page_to_label.get(st.session_state.get("current_page", "main"), _nav_labels[0])
-_default_index = _nav_labels.index(_default_label) if _default_label in _nav_labels else 0
+if st.session_state.get("current_page") not in PAGE_OPTIONS.values():
+    st.session_state.current_page = "main"
 
-# Keep the navigation widget in sync when other UI actions change `current_page`
-if (
-    st.session_state.get("sidebar_nav") not in _nav_labels
-    or PAGE_OPTIONS.get(st.session_state.get("sidebar_nav")) != st.session_state.get("current_page")
-):
-    st.session_state.sidebar_nav = _default_label
+def _go_to(page_key: str):
+    st.session_state.current_page = page_key
+    st.rerun()
 
-selected_label = st.sidebar.radio(
-    "Navigation",
-    _nav_labels,
-    index=_default_index,
-    key="sidebar_nav",
-)
-st.session_state.current_page = PAGE_OPTIONS[selected_label]
+# --- SIDEBAR NAV (button-based, grouped) ---
+st.sidebar.markdown("### 👤 Job Seeker")
 
-with st.sidebar.expander(
-    "Filters & tools",
-    expanded=st.session_state.current_page in {"job_recommendations", "market_dashboard"},
-):
-    if st.session_state.current_page == "job_recommendations":
-        target_domains = st.multiselect(
-            "Target domains",
-            options=[
-                "FinTech",
-                "ESG & Sustainability",
-                "Data Analytics",
-                "Digital Transformation",
-                "Investment Banking",
-                "Consulting",
-                "Technology",
-                "Healthcare",
-                "Education",
-            ],
-            default=st.session_state.get("target_domains", []),
-            key="sidebar_domain_filter",
-        )
-        st.session_state.target_domains = target_domains
+_job_seeker_nav = [
+    ("🏠 Job Seeker", "main"),
+    ("💼 Job Search", "job_recommendations"),
+    ("📄 AI Powered Tailored Resume", "tailored_resume"),
+    ("🤖 AI Mock Interview", "ai_interview"),
+    ("📊 Market Dashboard", "market_dashboard"),
+    ("🧠 How This App Works", "how_it_works"),
+]
 
-        salary_exp = st.slider(
-            "Min. salary (HKD)",
-            min_value=0,
-            max_value=150000,
-            value=st.session_state.get("salary_expectation", 0),
-            step=5000,
-            key="sidebar_salary_filter",
-        )
-        st.session_state.salary_expectation = salary_exp
+for label, page_key in _job_seeker_nav:
+    is_current = st.session_state.get("current_page") == page_key
+    if st.sidebar.button(
+        label,
+        key=f"nav_btn_{page_key}",
+        type="primary",
+        disabled=is_current,
+        width="stretch",
+    ):
+        _go_to(page_key)
 
-    if st.session_state.current_page == "market_dashboard" and st.session_state.get("user_profile"):
-        display_skill_matching_matrix(st.session_state.user_profile)
+st.sidebar.divider()
 
-    display_token_usage()
+st.sidebar.markdown("### 🎯 Recruiter")
 
-active_job = st.session_state.get("selected_job")
-if active_job:
-    with st.sidebar.expander("Active job focus", expanded=False):
-        st.caption("Currently focusing on:")
-        st.write(f"**{active_job.get('title', 'Unknown Role')}**")
-        company = active_job.get("company")
-        if company:
-            st.caption(company)
+_recruiter_nav = [
+    ("📋 Job Posting", "head_hunter"),
+    ("🤝 Recruitment Match", "recruitment_match"),
+]
 
-        if st.button("Clear selection", key="clear_selected_job", use_container_width=True):
-            st.session_state.selected_job = None
-            st.session_state.selected_job_for_resume = None
-            st.session_state.show_resume_generator = False
-            st.session_state.generated_resume = None
-            if "interview" in st.session_state:
-                del st.session_state.interview
-            if "interview_started" in st.session_state:
-                del st.session_state.interview_started
-            if "_interview_job_key" in st.session_state:
-                del st.session_state._interview_job_key
-            st.rerun()
-
-current_id = st.session_state.get("job_seeker_id")
-if current_id:
-    with st.sidebar.expander("Session", expanded=False):
-        st.info(f"Current Session ID: **{current_id}**")
+for label, page_key in _recruiter_nav:
+    is_current = st.session_state.get("current_page") == page_key
+    if st.sidebar.button(
+        label,
+        key=f"nav_btn_{page_key}",
+        type="secondary",
+        disabled=is_current,
+        width="stretch",
+    ):
+        _go_to(page_key)
 if not MODULES_AVAILABLE:
     st.error("❌ Page modules not available. Please ensure the modules/ui/pages directory is properly installed.")
     st.info("Falling back to basic functionality...")
@@ -502,24 +465,6 @@ elif st.session_state.current_page == "market_dashboard":
 
 elif st.session_state.current_page == "how_it_works":
     render_how_it_works_page()
-
-
-# ============================================================================
-# SIDEBAR HELP AND FOOTER
-# ============================================================================
-with st.sidebar.expander("Help", expanded=False):
-    st.markdown(
-        """
-**Job seeker flow**
-- **Job Seeker**: upload CV + save your profile
-- **Job Search**: run matched search + pick an active job
-- **Tailored Resume / AI Mock Interview**: use the active job for context
-
-**Recruiter flow**
-- **Job Posting**: publish/manage roles
-- **Recruitment Match**: match candidates to roles
-"""
-    )
                     
 # Footer
 st.markdown("---")

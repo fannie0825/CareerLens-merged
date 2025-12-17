@@ -124,7 +124,7 @@ def main_analyzer_page():
     if cv_file:
         st.success(f"✅ Uploaded: **{cv_file.name}**")
 
-        if st.button("🔍 Analyze with AI", type="primary", use_container_width=True, key="analyze_button"):
+        if st.button("🔍 Analyze with AI", type="primary", width="stretch", key="analyze_button"):
 
             # STEP 1: Analyze Resume with WebSocket keepalive
             with ProgressTracker("Analyzing your resume with AI", total_steps=3) as tracker:
@@ -470,7 +470,7 @@ def main_analyzer_page():
             
 
             # Submit button
-            submitted = st.form_submit_button("💾 Save Information", use_container_width=True)
+            submitted = st.form_submit_button("💾 Save Information", width="stretch")
 
             if submitted:
                 if (education_level == "Please select" or graduation_status == "Please select" or

@@ -49,7 +49,7 @@ def ai_interview_page():
         )
 
         # Option to clear context and choose a different job within the interview page
-        if st.button("Cancel & Use different job", use_container_width=True):
+        if st.button("Cancel & Use different job", width="stretch"):
             st.session_state.selected_job = None
             st.session_state.selected_job_for_resume = None
             if 'interview' in st.session_state:
@@ -60,7 +60,7 @@ def ai_interview_page():
                 del st.session_state._interview_job_key
             st.rerun()
 
-        if st.button("⬅️ Back to Job Matches", use_container_width=True):
+        if st.button("⬅️ Back to Job Matches", width="stretch"):
             st.session_state.selected_job = None
             st.session_state.selected_job_for_resume = None
             st.session_state.current_page = "job_recommendations"
@@ -112,7 +112,7 @@ def ai_interview_page():
         
         Or, headhunters can publish positions in the Headhunter module.
         """)
-        if st.button("🔍 Go to Job Search", use_container_width=True):
+        if st.button("🔍 Go to Job Search", width="stretch"):
             st.session_state.current_page = "job_recommendations"
             st.rerun()
         return
@@ -216,7 +216,7 @@ def ai_interview_page():
         return
 
     if not st.session_state.get("interview_started", False):
-        if st.button("🚀 Start Interview", type="primary", use_container_width=True):
+        if st.button("🚀 Start Interview", type="primary", width="stretch"):
             st.session_state.interview_started = True
             st.session_state.interview = initialize_interview_session(selected_job)
 
@@ -250,7 +250,7 @@ def ai_interview_page():
                                 placeholder="Please describe your answer in detail...",
                                 key=f"answer_{interview['current_question']}")
 
-            if st.button("📤 Submit Answer", type="primary", use_container_width=True):
+            if st.button("📤 Submit Answer", type="primary", width="stretch"):
                 if answer.strip():
                     with st.spinner("AI is evaluating your answer..."):
                         # Evaluate current answer
@@ -364,7 +364,7 @@ def ai_interview_page():
                     st.markdown("---")
 
             # Restart interview
-            if st.button("🔄 Restart Interview", use_container_width=True):
+            if st.button("🔄 Restart Interview", width="stretch"):
                 del st.session_state.interview
                 if 'interview_started' in st.session_state:
                     del st.session_state.interview_started
@@ -456,10 +456,12 @@ def ai_interview_dashboard():
         else:
             st.metric("Interview Status", "Not Started")
 
-    # Page selection
-    page_option = st.sidebar.radio(
-        "Select Function",
-        ["Start Mock Interview", "Interview Preparation Guide", "Instructions"]
+    # Page selection (main content, not sidebar — avoid double sidebar navigation)
+    page_option = st.radio(
+        "Select function",
+        ["Start Mock Interview", "Interview Preparation Guide", "Instructions"],
+        horizontal=True,
+        key="ai_interview_section",
     )
 
     if page_option == "Start Mock Interview":

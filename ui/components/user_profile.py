@@ -133,7 +133,7 @@ def display_user_profile():
             placeholder="Professional certifications, awards, publications..."
         )
         
-        submitted = st.form_submit_button("💾 Save Profile", use_container_width=True, type="primary")
+        submitted = st.form_submit_button("💾 Save Profile", width="stretch", type="primary")
         
         if submitted:
             st.session_state.user_profile = {

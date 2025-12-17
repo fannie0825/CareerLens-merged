@@ -107,7 +107,7 @@ def resume_upload_page():
         st.success(f"✅ Uploaded: **{uploaded_file.name}**")
         
         # Process button
-        if st.button("🔍 Extract Profile Information", type="primary", use_container_width=True):
+        if st.button("🔍 Extract Profile Information", type="primary", width="stretch"):
             _process_resume(
                 uploaded_file, 
                 extract_text_from_resume,
@@ -321,17 +321,17 @@ def _display_extracted_profile():
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        if st.button("📊 Go to Job Matching", use_container_width=True):
+        if st.button("📊 Go to Job Matching", width="stretch"):
             st.session_state.current_page = "job_recommendations"
             st.rerun()
     
     with col2:
-        if st.button("📝 Generate Tailored Resume", use_container_width=True):
+        if st.button("📝 Generate Tailored Resume", width="stretch"):
             st.session_state.current_page = "tailored_resume"
             st.rerun()
     
     with col3:
-        if st.button("🔄 Upload New Resume", use_container_width=True):
+        if st.button("🔄 Upload New Resume", width="stretch"):
             # Clear extracted profile
             st.session_state.extracted_profile = None
             st.session_state.resume_text = None

@@ -70,7 +70,7 @@ def render_structured_resume_editor(resume_data):
     with col_summary1:
         edited_data['summary'] = st.text_area(**summary_kwargs)
     with col_summary2:
-        if st.button("✨ Refine with AI", key='refine_summary', use_container_width=True, help="Use AI to improve this section"):
+        if st.button("✨ Refine with AI", key='refine_summary', width="stretch", help="Use AI to improve this section"):
             with st.spinner("🤖 Refining summary..."):
                 try:
                     text_gen = get_text_generator()
@@ -165,7 +165,7 @@ Return ONLY the improved summary text, no additional explanation."""
                 with col_bullet1:
                     bullet_text = st.text_area(**bullet_kwargs)
                 with col_bullet2:
-                    if st.button("✨", key=f'refine_bullet_{i}_{j}', help="Refine this bullet with AI", use_container_width=True):
+                    if st.button("✨", key=f'refine_bullet_{i}_{j}', help="Refine this bullet with AI", width="stretch"):
                         with st.spinner("🤖 Refining..."):
                             try:
                                 text_gen = get_text_generator()
@@ -278,7 +278,7 @@ def display_resume_generator():
         job_description_input = passed_job.get('description', "") or ""
 
         # Option to clear and start fresh
-        if st.button("⬅️ Back to Job Matches", use_container_width=True):
+        if st.button("⬅️ Back to Job Matches", width="stretch"):
             _back_to_job_matches()
     else:
         # Standard manual entry if they clicked the sidebar directly (or landed here without a selected job)
@@ -319,7 +319,7 @@ def display_resume_generator():
         st.write("**Your Profile:**", st.session_state.user_profile.get('name', 'N/A'))
     
     with col2:
-        if st.button("← Back", use_container_width=True):
+        if st.button("← Back", width="stretch"):
             # If we have a current page router, go back to job matches; otherwise just close the generator.
             if st.session_state.get("current_page") is not None:
                 _back_to_job_matches()
@@ -335,7 +335,7 @@ def display_resume_generator():
         st.info("Paste/select a job description above to enable generation.")
         return
 
-    if st.button("🚀 Generate Tailored Resume", type="primary", use_container_width=True):
+    if st.button("🚀 Generate Tailored Resume", type="primary", width="stretch"):
         with st.spinner("🤖 Creating your personalized resume using AI..."):
             # Persist manual entry so downstream steps (editor/downloads) have a job context
             st.session_state.selected_job = job
@@ -405,7 +405,7 @@ def display_resume_generator():
                     data=pdf_file,
                     file_name=f"resume_{_safe_filename_component(job_company)}_{_safe_filename_component(job_title)}.pdf",
                     mime="application/pdf",
-                    use_container_width=True
+                    width="stretch"
                 )
         
         with col2:
@@ -419,7 +419,7 @@ def display_resume_generator():
                     data=docx_file,
                     file_name=f"resume_{_safe_filename_component(job_company)}_{_safe_filename_component(job_title)}.docx",
                     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                    use_container_width=True
+                    width="stretch"
                 )
         
         with col3:
@@ -429,7 +429,7 @@ def display_resume_generator():
                 data=json_data,
                 file_name=f"resume_{_safe_filename_component(job_company)}_{_safe_filename_component(job_title)}.json",
                 mime="application/json",
-                use_container_width=True
+                width="stretch"
             )
         
         with col4:
@@ -439,7 +439,7 @@ def display_resume_generator():
                 data=txt_content,
                 file_name=f"resume_{_safe_filename_component(job_company)}_{_safe_filename_component(job_title)}.txt",
                 mime="text/plain",
-                use_container_width=True
+                width="stretch"
             )
         
         with col5:
@@ -447,11 +447,11 @@ def display_resume_generator():
                 st.link_button(
                     "🚀 Apply to Job",
                     job['url'],
-                    use_container_width=True,
+                    width="stretch",
                     type="primary"
                 )
         
-        if st.button("🔄 Recalculate Match Score", use_container_width=True):
+        if st.button("🔄 Recalculate Match Score", width="stretch"):
             with st.spinner("📊 Recalculating match score..."):
                 text_gen = get_text_generator()
                 if text_gen is None:

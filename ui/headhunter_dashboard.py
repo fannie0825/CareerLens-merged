@@ -15,10 +15,12 @@ def enhanced_head_hunter_page():
     """Enhanced Head Hunter Page - Job Publishing and Management"""
     st.title("🎯 Head Hunter Portal")
 
-    # Page selection
-    page_option = st.sidebar.radio(
-        "Select Function",
-        ["Publish New Position", "View Published Positions", "Position Statistics"]
+    # Page selection (main content, not sidebar — avoid double sidebar navigation)
+    page_option = st.radio(
+        "Select function",
+        ["Publish New Position", "View Published Positions", "Position Statistics"],
+        horizontal=True,
+        key="headhunter_section",
     )
 
     if page_option == "Publish New Position":
@@ -168,7 +170,7 @@ def publish_new_job():
                                       value=datetime.now().date() + timedelta(days=30))
 
         # Submit button
-        submitted = st.form_submit_button("💾 Publish Position", type="primary", use_container_width=True)
+        submitted = st.form_submit_button("💾 Publish Position", type="primary", width="stretch")
 
         if submitted:
             # Validate required fields

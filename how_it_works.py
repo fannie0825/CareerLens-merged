@@ -452,11 +452,11 @@ def render_how_it_works_page():
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        if st.button("📊 Go to Market Dashboard", use_container_width=True, type="primary"):
+        if st.button("📊 Go to Market Dashboard", width="stretch", type="primary"):
             st.session_state.current_page = "market_dashboard"
             st.rerun()
         
-        if st.button("🏠 Back to Job Seeker", use_container_width=True):
+        if st.button("🏠 Back to Job Seeker", width="stretch"):
             st.session_state.current_page = "main"
             st.rerun()
 
