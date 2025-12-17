@@ -89,10 +89,10 @@ try:
         tailored_resume_page,
         market_dashboard_page,
         # UI components (for compatibility)
-        render_sidebar as modular_render_sidebar,
         render_hero_banner,
         display_resume_generator as modular_display_resume_generator,
         display_market_positioning_profile,
+        display_skill_matching_matrix,
     )
     MODULES_AVAILABLE = True
     WEBSOCKET_UTILS_AVAILABLE = True
@@ -315,31 +315,6 @@ st.sidebar.markdown("""
         margin-bottom: 2rem;
         margin-top: 0.5rem;
     }
-    
-    /* Navigation Section Headers */
-    .nav-section-header {
-        font-family: 'Montserrat', sans-serif;
-        font-weight: 700;
-        font-size: 1.1rem;
-        color: white !important;
-        margin-top: 1.5rem;
-        margin-bottom: 0.5rem;
-        padding-left: 0.5rem;
-        border-left: 3px solid var(--brand-glow);
-    }
-    
-    /* Navigation Items */
-    .nav-item {
-        font-family: 'Inter', sans-serif;
-        color: var(--text-secondary-light) !important;
-        font-size: 0.9rem;
-        padding-left: 1.5rem;
-        margin: 0.3rem 0;
-        cursor: pointer;
-    }
-    .nav-item:hover {
-        color: var(--brand-glow) !important;
-    }
 
 </style>
 """, unsafe_allow_html=True)
@@ -392,89 +367,99 @@ st.sidebar.markdown("""
 
 st.sidebar.markdown("---")
 
-# Job Seeker Section
-st.sidebar.markdown('<div class="nav-section-header" style="color: black !important;">👤 Job Seeker</div>', unsafe_allow_html=True)
-if st.sidebar.button("🏠 Job Seeker", use_container_width=True, key="main_btn"):
-    st.session_state.current_page = "main"
-if st.sidebar.button("💼 Job Search", use_container_width=True, key="job_matching_btn"):
-    st.session_state.current_page = "job_recommendations"
-if st.sidebar.button("📝 AI Powered Tailored Resume", use_container_width=True, key="tailored_resume_btn"):
-    st.session_state.current_page = "tailored_resume"
-if st.sidebar.button("🤖 AI Mock Interview", use_container_width=True, key="ai_interview_btn"):
-    st.session_state.current_page = "ai_interview"
-if st.sidebar.button("📊 Market Dashboard", use_container_width=True, key="market_dashboard_btn"):
-    st.session_state.current_page = "market_dashboard"
-if st.sidebar.button("🧠 How This App Works", use_container_width=True, key="how_it_works_btn"):
-    st.session_state.current_page = "how_it_works"
+PAGE_OPTIONS = {
+    "👤 Job Seeker": "main",
+    "💼 Job Search": "job_recommendations",
+    "📝 Tailored Resume": "tailored_resume",
+    "🤖 AI Mock Interview": "ai_interview",
+    "📊 Market Dashboard": "market_dashboard",
+    "🧠 How This App Works": "how_it_works",
+    "🎯 Recruiter • Job Posting": "head_hunter",
+    "🎯 Recruiter • Recruitment Match": "recruitment_match",
+}
+_page_to_label = {v: k for k, v in PAGE_OPTIONS.items()}
+_nav_labels = list(PAGE_OPTIONS.keys())
+_default_label = _page_to_label.get(st.session_state.get("current_page", "main"), _nav_labels[0])
+_default_index = _nav_labels.index(_default_label) if _default_label in _nav_labels else 0
 
-st.sidebar.markdown("---")
+# Keep the navigation widget in sync when other UI actions change `current_page`
+if (
+    st.session_state.get("sidebar_nav") not in _nav_labels
+    or PAGE_OPTIONS.get(st.session_state.get("sidebar_nav")) != st.session_state.get("current_page")
+):
+    st.session_state.sidebar_nav = _default_label
 
-# Recruiter Section
-st.sidebar.markdown('<div class="nav-section-header" style="color: black !important;">🎯 Recruiter</div>', unsafe_allow_html=True)
-if st.sidebar.button("📋 Job Posting", use_container_width=True, key="job_posting_btn"):
-    st.session_state.current_page = "head_hunter"
-if st.sidebar.button("🔍 Recruitment Match", use_container_width=True, key="recruitment_match_btn"):
-    st.session_state.current_page = "recruitment_match"
+selected_label = st.sidebar.radio(
+    "Navigation",
+    _nav_labels,
+    index=_default_index,
+    key="sidebar_nav",
+)
+st.session_state.current_page = PAGE_OPTIONS[selected_label]
 
-st.sidebar.markdown("---")
-
-# CareerLens Tools sidebar section
-with st.sidebar:
-    st.subheader("🔍 CareerLens Tools")
-    
-    # Display domain filter on job recommendations page
+with st.sidebar.expander(
+    "Filters & tools",
+    expanded=st.session_state.current_page in {"job_recommendations", "market_dashboard"},
+):
     if st.session_state.current_page == "job_recommendations":
-        with st.expander("🏭 Industry Filters", expanded=False):
-            target_domains = st.multiselect(
-                "Target Domains",
-                options=["FinTech", "ESG & Sustainability", "Data Analytics", "Digital Transformation", 
-                        "Investment Banking", "Consulting", "Technology", "Healthcare", "Education"],
-                default=st.session_state.get('target_domains', []),
-                key="sidebar_domain_filter"
-            )
-            st.session_state.target_domains = target_domains
-            
-            salary_exp = st.slider(
-                "Min. Salary (HKD)",
-                min_value=0,
-                max_value=150000,
-                value=st.session_state.get('salary_expectation', 0),
-                step=5000,
-                key="sidebar_salary_filter"
-            )
-            st.session_state.salary_expectation = salary_exp
-    
-    # Display token usage
+        target_domains = st.multiselect(
+            "Target domains",
+            options=[
+                "FinTech",
+                "ESG & Sustainability",
+                "Data Analytics",
+                "Digital Transformation",
+                "Investment Banking",
+                "Consulting",
+                "Technology",
+                "Healthcare",
+                "Education",
+            ],
+            default=st.session_state.get("target_domains", []),
+            key="sidebar_domain_filter",
+        )
+        st.session_state.target_domains = target_domains
+
+        salary_exp = st.slider(
+            "Min. salary (HKD)",
+            min_value=0,
+            max_value=150000,
+            value=st.session_state.get("salary_expectation", 0),
+            step=5000,
+            key="sidebar_salary_filter",
+        )
+        st.session_state.salary_expectation = salary_exp
+
+    if st.session_state.current_page == "market_dashboard" and st.session_state.get("user_profile"):
+        display_skill_matching_matrix(st.session_state.user_profile)
+
     display_token_usage()
-    
-    st.markdown("---")
 
-    # Sidebar status: show active job focus (if any)
-    active_job = st.session_state.get('selected_job')
-    if active_job:
-        with st.expander("📌 Active Job Focus", expanded=True):
-            st.caption("Currently focusing on:")
-            st.write(f"**{active_job.get('title', 'Unknown Role')}**")
-            company = active_job.get("company")
-            if company:
-                st.caption(company)
+active_job = st.session_state.get("selected_job")
+if active_job:
+    with st.sidebar.expander("Active job focus", expanded=False):
+        st.caption("Currently focusing on:")
+        st.write(f"**{active_job.get('title', 'Unknown Role')}**")
+        company = active_job.get("company")
+        if company:
+            st.caption(company)
 
-            if st.button("Clear Selection", key="clear_selected_job", use_container_width=True):
-                st.session_state.selected_job = None
-                st.session_state.selected_job_for_resume = None
-                st.session_state.show_resume_generator = False
-                st.session_state.generated_resume = None
-                if 'interview' in st.session_state:
-                    del st.session_state.interview
-                if 'interview_started' in st.session_state:
-                    del st.session_state.interview_started
-                if '_interview_job_key' in st.session_state:
-                    del st.session_state._interview_job_key
-                st.rerun()
-    
-    # Display current session state
-    current_id = st.session_state.get('job_seeker_id')
-    if current_id:
+        if st.button("Clear selection", key="clear_selected_job", use_container_width=True):
+            st.session_state.selected_job = None
+            st.session_state.selected_job_for_resume = None
+            st.session_state.show_resume_generator = False
+            st.session_state.generated_resume = None
+            if "interview" in st.session_state:
+                del st.session_state.interview
+            if "interview_started" in st.session_state:
+                del st.session_state.interview_started
+            if "_interview_job_key" in st.session_state:
+                del st.session_state._interview_job_key
+            st.rerun()
+
+current_id = st.session_state.get("job_seeker_id")
+if current_id:
+    with st.sidebar.expander("Session", expanded=False):
         st.info(f"Current Session ID: **{current_id}**")
 if not MODULES_AVAILABLE:
     st.error("❌ Page modules not available. Please ensure the modules/ui/pages directory is properly installed.")
@@ -522,22 +507,19 @@ elif st.session_state.current_page == "how_it_works":
 # ============================================================================
 # SIDEBAR HELP AND FOOTER
 # ============================================================================
-st.sidebar.markdown("---")
-st.sidebar.markdown("""
-### 💡 Usage Instructions
+with st.sidebar.expander("Help", expanded=False):
+    st.markdown(
+        """
+**Job seeker flow**
+- **Job Seeker**: upload CV + save your profile
+- **Job Search**: run matched search + pick an active job
+- **Tailored Resume / AI Mock Interview**: use the active job for context
 
-**For Job Seekers:**
-- **Job Seeker**: Upload your CV and fill in your profile
-- **Job Search**: Find AI-matched positions based on your profile
-- **AI Powered Tailored Resume**: Generate job-specific resumes
-- **AI Mock Interview**: Practice with AI-powered mock interviews
-- **Market Dashboard**: View comprehensive market insights
-- **How This App Works**: Learn about our AI technology
-
-**For Recruiters:**
-- **Job Posting**: Publish and manage job openings
-- **Recruitment Match**: Smart candidate-position matching
-""")
+**Recruiter flow**
+- **Job Posting**: publish/manage roles
+- **Recruitment Match**: match candidates to roles
+"""
+    )
                     
 # Footer
 st.markdown("---")
