@@ -16,6 +16,7 @@ def market_dashboard_page():
     # Check if modules are available
     try:
         from utils import _cleanup_session_state, validate_secrets
+        from utils.config import get_num_jobs_to_search
         from ui.components.styles import render_styles
         from ui.components import (
             render_hero_banner,
@@ -63,15 +64,88 @@ def market_dashboard_page():
             st.session_state.get('user_profile', {}),
             st.session_state.get('matched_jobs')
         )
-        
+
+        # ---------------------------------------------------------------------
+        # State drift guard: make sure matched jobs exist before analysis runs
+        # ---------------------------------------------------------------------
+        # Job Search stores the selected speed under this key.
+        # Fall back to older keys if they still exist in a user's session.
+        search_mode_label = (
+            st.session_state.get("job_search_speed")
+            or st.session_state.get("search_mode")
+            or st.session_state.get("job_search_mode")
+        )
+        expected_jobs = get_num_jobs_to_search(search_mode_label, default=15) if search_mode_label else None
+
+        # If the user refreshed/navigated directly here, session state may have
+        # been re-initialized (matched_jobs=[]). Try to rehydrate from the DB.
+        if not st.session_state.get("matched_jobs"):
+            job_seeker_id = st.session_state.get("job_seeker_id")
+            if job_seeker_id:
+                try:
+                    from database import get_matched_jobs_for_seeker
+
+                    # Fetch at least the expected count (or a reasonable default).
+                    limit = max(int(expected_jobs or 0), 25)
+                    saved_jobs = get_matched_jobs_for_seeker(job_seeker_id, min_score=0.0, limit=limit)
+
+                    processed_matches = []
+                    for job in saved_jobs or []:
+                        if not isinstance(job, dict):
+                            continue
+
+                        def _split_csv(value):
+                            if value is None:
+                                return []
+                            if isinstance(value, list):
+                                return [str(s).strip() for s in value if str(s).strip()]
+                            if isinstance(value, str):
+                                return [s.strip() for s in value.split(",") if s.strip()]
+                            return []
+
+                        processed_matches.append({
+                            "job": {
+                                "title": job.get("job_title", ""),
+                                "company": job.get("company_name", ""),
+                                "location": job.get("location", ""),
+                                "description": job.get("job_description", ""),
+                                "skills": _split_csv(job.get("required_skills")),
+                                "url": job.get("application_url", ""),
+                                "posted_date": job.get("posted_date", ""),
+                                "employment_type": job.get("employment_type", ""),
+                                "industry": job.get("industry", ""),
+                                "salary_min": job.get("salary_min"),
+                                "salary_max": job.get("salary_max"),
+                            },
+                            # Normalize DB fields to in-app visualization fields
+                            "combined_score": job.get("match_percentage", 0) or 0,
+                            "semantic_score": job.get("cosine_similarity_score", 0) or 0,
+                            "skill_match_percentage": job.get("skill_match_score", 0) or 0,
+                            "experience_match_score": job.get("experience_match_score", 0) or 0,
+                            "matched_skills": _split_csv(job.get("matched_skills")),
+                            "missing_skills": _split_csv(job.get("missing_skills")),
+                        })
+
+                    if processed_matches:
+                        st.session_state.matched_jobs = processed_matches
+                except Exception:
+                    # If DB rehydration fails, fall back to the standard empty-state UI.
+                    pass
+
         if not st.session_state.get('matched_jobs'):
             st.info(
                 "To see your market positioning, first upload your CV on **Job Seeker** and generate job matches on **Job Search**. "
                 "Then come back here to review your positioning, skill gaps, and match breakdown."
             )
+            if expected_jobs:
+                st.caption(f"Tip: your current Search Mode is set to fetch about **{expected_jobs}** jobs per run.")
             return
 
         matched_jobs = st.session_state.matched_jobs
+        if not isinstance(matched_jobs, list):
+            st.warning("Your job matches are not in the expected format. Please rerun Job Search to regenerate matched roles.")
+            return
+
         st.caption(f"Using **{len(matched_jobs)}** matched roles to estimate your positioning and skill gaps.")
 
         # Quick skill-gap summary (fast, no charts)
