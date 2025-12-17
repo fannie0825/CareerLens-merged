@@ -1,5 +1,15 @@
+import os
+import pytest
 import requests
 import json
+
+# This file is a live endpoint diagnostic (not a unit test).
+# It is disabled by default to avoid accidental network calls in CI/local runs.
+if os.getenv("RUN_LIVE_ENDPOINT_TESTS") != "1":
+    pytest.skip(
+        "Live endpoint diagnostics are disabled by default. Set RUN_LIVE_ENDPOINT_TESTS=1 to enable.",
+        allow_module_level=True,
+    )
 
 API_KEY = "90fa7411f0e542d59bec8dca4c51fa7c"
 API_VERSION = "2024-02-15-preview"
