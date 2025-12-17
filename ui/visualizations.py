@@ -234,25 +234,19 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
         salary_fig = apply_chart_theme(salary_fig)
         st.plotly_chart(salary_fig, width="stretch")
     """
-    # 5. Posting Date Histogram
-    if posting_dates:
-        st.subheader("Job Posting Trend")
-        date_ct = Counter(posting_dates)
-        xs = sorted(date_ct.keys())
-        ys = [date_ct[x] for x in xs]
-        fig = go.Figure([go.Bar(x=xs, y=ys)])
-        fig.update_layout(xaxis_title="Posting Date", yaxis_title="Jobs Posted")
-        fig = apply_chart_theme(fig)
-        st.plotly_chart(fig, width="stretch")
-
     # 4. Seniority / Experience Level Distribution
     st.subheader("Seniority / Experience Level Distribution")
+    st.caption("Question it answers: **At what level is the market currently valuing you?**")
     buckets = [b for b in seniority_buckets if b and b != "Unknown"]
     if buckets:
         bucket_ct = Counter(buckets)
         ordered = ["Entry / Associate", "Mid-level", "Senior", "Lead / Manager"]
         labels = [b for b in ordered if b in bucket_ct]
         values = [bucket_ct[b] for b in labels]
+
+        dominant_bucket = bucket_ct.most_common(1)[0][0] if bucket_ct else None
+        if dominant_bucket:
+            st.write(f"Market signal: your matched roles skew **{dominant_bucket}**.")
 
         fig = go.Figure(
             data=[
@@ -270,6 +264,17 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
         st.plotly_chart(fig, width="stretch")
     else:
         st.caption("Not enough job data to infer seniority buckets (missing titles/experience signals).")
+
+    # 5. Posting Date Histogram
+    if posting_dates:
+        st.subheader("Job Posting Trend")
+        date_ct = Counter(posting_dates)
+        xs = sorted(date_ct.keys())
+        ys = [date_ct[x] for x in xs]
+        fig = go.Figure([go.Bar(x=xs, y=ys)])
+        fig.update_layout(xaxis_title="Posting Date", yaxis_title="Jobs Posted")
+        fig = apply_chart_theme(fig)
+        st.plotly_chart(fig, width="stretch")
 
     # 6. Skill Match/Gap Comparison
     st.subheader("Matched and Missing Skill Counts per Job")
