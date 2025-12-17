@@ -58,6 +58,32 @@ import streamlit as st # pyright: ignore[reportMissingImports]
 import plotly.graph_objs as go
 from collections import Counter
 
+def apply_chart_theme(fig):
+    """Apply consistent dark theme to Plotly figures"""
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='#E2E8F0'),
+        xaxis=dict(
+            gridcolor='#334155',
+            linecolor='#334155',
+            zerolinecolor='#334155',
+            tickfont=dict(color='#E2E8F0')
+        ),
+        yaxis=dict(
+            gridcolor='#334155',
+            linecolor='#334155',
+            zerolinecolor='#334155',
+            tickfont=dict(color='#E2E8F0')
+        ),
+        legend=dict(
+            font=dict(color='#E2E8F0'),
+            bgcolor='rgba(0,0,0,0)'
+        )
+    )
+    return fig
+
+
 def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
     if not matched_jobs or len(matched_jobs) == 0:
         st.info("No matched jobs available for visualization.")
@@ -142,6 +168,7 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
     #match_fig.add_trace(go.Bar(x=job_titles, y=exp_scores, name="Experience Match Score"))
     match_fig.add_trace(go.Bar(x=job_titles, y=match_percentages, name="Match Percentage"))
     match_fig.update_layout(barmode='group', xaxis_tickangle=-45, yaxis=dict(title="Score / Percent"))
+    match_fig = apply_chart_theme(match_fig)
     st.plotly_chart(match_fig, use_container_width=True)
     """
     # 2. Salary Distribution
@@ -150,6 +177,7 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
         base_salary = [s if s is not None else 0 for s in avg_salaries]
         salary_fig = go.Figure([go.Bar(x=job_titles, y=base_salary, text=salary_labels, textposition='auto')])
         salary_fig.update_layout(xaxis_tickangle=-45, yaxis_title="Average Salary")
+        salary_fig = apply_chart_theme(salary_fig)
         st.plotly_chart(salary_fig, use_container_width=True)
     """
     # 4. Employment Type Frequencies
@@ -159,6 +187,7 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
         emp_ct = Counter(etypes)
         fig = go.Figure([go.Bar(x=list(emp_ct.keys()), y=list(emp_ct.values()))])
         fig.update_layout(yaxis_title="Number of Jobs")
+        fig = apply_chart_theme(fig)
         st.plotly_chart(fig, use_container_width=True)
 
     # 5. Posting Date Histogram
@@ -169,6 +198,7 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
         ys = [date_ct[x] for x in xs]
         fig = go.Figure([go.Bar(x=xs, y=ys)])
         fig.update_layout(xaxis_title="Posting Date", yaxis_title="Jobs Posted")
+        fig = apply_chart_theme(fig)
         st.plotly_chart(fig, use_container_width=True)
 
     # 6. Skill Match/Gap Comparison
@@ -177,6 +207,7 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
     skills_fig.add_trace(go.Bar(x=job_titles, y=skill_match_counts, name='Matched Skills Count'))
     skills_fig.add_trace(go.Bar(x=job_titles, y=missing_skill_counts, name='Missing Skills Count'))
     skills_fig.update_layout(barmode='group', xaxis_tickangle=-45, yaxis_title='Skill Count')
+    skills_fig = apply_chart_theme(skills_fig)
     st.plotly_chart(skills_fig, use_container_width=True)
 
 # Estimate salary expectation from job seeker data
@@ -292,23 +323,35 @@ def create_job_comparison_radar(matched_job: dict, job: dict, job_seeker_data: d
 
         fig.update_layout(
             polar=dict(
+                bgcolor='rgba(0,0,0,0)',
                 radialaxis=dict(
                     visible=True,
                     range=[0, 100],
-                    tickfont=dict(size=10)
+                    tickfont=dict(size=10, color='#94A3B8'),
+                    gridcolor='#334155',
+                    linecolor='#334155'
                 ),
                 angularaxis=dict(
-                    tickfont=dict(size=11)
+                    tickfont=dict(size=11, color='#E2E8F0'),
+                    gridcolor='#334155',
+                    linecolor='#334155'
                 )
             ),
             showlegend=True,
             title=dict(
                 text="Multi-dimensional Job Comparison",
                 x=0.5,
-                font=dict(size=16)
+                font=dict(size=16, color='#E2E8F0')
             ),
             height=500,
-            margin=dict(l=80, r=80, t=80, b=80)
+            margin=dict(l=80, r=80, t=80, b=80),
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='#E2E8F0'),
+            legend=dict(
+                font=dict(color='#E2E8F0'),
+                bgcolor='rgba(0,0,0,0)'
+            )
         )
         
         st.plotly_chart(fig, use_container_width=True, key=f"radar_chart_{chart_key}")
