@@ -252,6 +252,13 @@ def display_resume_generator():
 
     passed_job = st.session_state.get('selected_job', None)
 
+    def _safe_filename_component(value: str) -> str:
+        """Make a small, filesystem-safe filename component."""
+        value = str(value or "").strip() or "unknown"
+        # avoid path separators and overly-long names
+        value = value.replace("/", "-").replace("\\", "-")
+        return value[:80]
+
     def _back_to_job_matches():
         # Clear context and route back to job matches
         st.session_state.selected_job = None
@@ -288,11 +295,14 @@ def display_resume_generator():
     # Normalize job object used by the existing generator logic below
     job = passed_job or {}
     job["description"] = job_description_input or ""
+    job_title = job.get("title") or job.get("job_title") or "Unknown Role"
+    job_company = job.get("company") or job.get("company_name") or "Unknown Company"
+    job_location = job.get("location") or "Unknown Location"
     
     st.markdown(f"""
     <div class="job-card">
-        <h3 style="color: var(--primary-accent); margin: 0;">{job['title']}</h3>
-        <p style="margin: 0.5rem 0; color: var(--text-muted);">🏢 {job['company']} • 📍 {job['location']}</p>
+        <h3 style="color: var(--primary-accent); margin: 0;">{job_title}</h3>
+        <p style="margin: 0.5rem 0; color: var(--text-muted);">🏢 {job_company} • 📍 {job_location}</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -387,13 +397,13 @@ def display_resume_generator():
         with col1:
             pdf_file = formatters['pdf'](
                 st.session_state.generated_resume,
-                filename=f"resume_{job['company']}_{job['title']}.pdf"
+                filename=f"resume_{_safe_filename_component(job_company)}_{_safe_filename_component(job_title)}.pdf"
             )
             if pdf_file:
                 st.download_button(
                     label="📥 Download as PDF",
                     data=pdf_file,
-                    file_name=f"resume_{job['company']}_{job['title']}.pdf",
+                    file_name=f"resume_{_safe_filename_component(job_company)}_{_safe_filename_component(job_title)}.pdf",
                     mime="application/pdf",
                     use_container_width=True
                 )
@@ -401,13 +411,13 @@ def display_resume_generator():
         with col2:
             docx_file = formatters['docx'](
                 st.session_state.generated_resume,
-                filename=f"resume_{job['company']}_{job['title']}.docx"
+                filename=f"resume_{_safe_filename_component(job_company)}_{_safe_filename_component(job_title)}.docx"
             )
             if docx_file:
                 st.download_button(
                     label="📥 Download as DOCX",
                     data=docx_file,
-                    file_name=f"resume_{job['company']}_{job['title']}.docx",
+                    file_name=f"resume_{_safe_filename_component(job_company)}_{_safe_filename_component(job_title)}.docx",
                     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     use_container_width=True
                 )
@@ -417,7 +427,7 @@ def display_resume_generator():
             st.download_button(
                 label="📥 Download as JSON",
                 data=json_data,
-                file_name=f"resume_{job['company']}_{job['title']}.json",
+                file_name=f"resume_{_safe_filename_component(job_company)}_{_safe_filename_component(job_title)}.json",
                 mime="application/json",
                 use_container_width=True
             )
@@ -427,7 +437,7 @@ def display_resume_generator():
             st.download_button(
                 label="📥 Download as TXT",
                 data=txt_content,
-                file_name=f"resume_{job['company']}_{job['title']}.txt",
+                file_name=f"resume_{_safe_filename_component(job_company)}_{_safe_filename_component(job_title)}.txt",
                 mime="text/plain",
                 use_container_width=True
             )
