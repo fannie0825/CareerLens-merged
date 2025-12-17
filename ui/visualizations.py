@@ -95,7 +95,6 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
     avg_salaries = []
     salary_labels = []
     industries = []
-    employment_types = []
     posting_dates = []
     skill_match_counts = []
     missing_skill_counts = []
@@ -132,9 +131,8 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
         avg_salaries.append(salary)
         salary_labels.append(labelstr)
 
-        # Industry & employment type
+        # Industry
         industries.append(job.get("industry", "N/A"))
-        employment_types.append(job.get("employment_type", "N/A"))
 
         # Post date
         dtxt = job.get("posted_date")
@@ -178,16 +176,6 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
         salary_fig = apply_chart_theme(salary_fig)
         st.plotly_chart(salary_fig, width="stretch")
     """
-    # 4. Employment Type Frequencies
-    st.subheader("Employment Type Frequencies")
-    etypes = [e for e in employment_types if e and e != "N/A"]
-    if etypes:
-        emp_ct = Counter(etypes)
-        fig = go.Figure([go.Bar(x=list(emp_ct.keys()), y=list(emp_ct.values()))])
-        fig.update_layout(yaxis_title="Number of Jobs")
-        fig = apply_chart_theme(fig)
-        st.plotly_chart(fig, width="stretch")
-
     # 5. Posting Date Histogram
     if posting_dates:
         st.subheader("Job Posting Trend")
