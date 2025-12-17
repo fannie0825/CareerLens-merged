@@ -489,8 +489,8 @@ class SemanticJobSearch:
         if not user_skills or not job_skills:
             return 0.0, []
         
-        user_skills_list = [s.strip() for s in str(user_skills).split(',') if s.strip()]
-        # Filter obvious non-skills (full-time/remote/etc) before matching.
+        # Filter obvious non-skills (full-time/remote/languages/etc) before matching.
+        user_skills_list = filter_skills([s for s in str(user_skills).split(',') if isinstance(s, str) and s.strip()])
         job_skills_list = filter_skills([s for s in job_skills if isinstance(s, str) and s.strip()])
         
         if not user_skills_list or not job_skills_list:

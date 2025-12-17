@@ -3,44 +3,7 @@ import streamlit as st
 import pandas as pd
 from core.salary_analyzer import calculate_salary_band
 from utils import get_text_generator
-import re
-from utils.skill_filter import is_valid_skill
-
-
-def _looks_like_spoken_language(skill: str) -> bool:
-    """Heuristic: treat spoken languages as non-skill-gaps.
-
-    This app stores candidate languages in a dedicated `languages` field, and prompts
-    job parsing to extract languages separately. When a job parser still emits
-    "English"/"Cantonese"/etc into `job['skills']`, we should not surface them as
-    "missing skills" in the skill-gap report.
-    """
-    if not isinstance(skill, str):
-        return False
-    s = skill.strip().lower()
-    if not s:
-        return False
-
-    # Common spoken language tokens (avoid matching programming languages).
-    spoken = {
-        "english",
-        "cantonese",
-        "mandarin",
-        "putonghua",
-        "chinese",
-        "french",
-        "german",
-        "spanish",
-        "japanese",
-        "korean",
-    }
-
-    # Exact match or "fluent/native/proficient in <language>" variants.
-    if s in spoken:
-        return True
-    if "language" in s or "fluent" in s or "native" in s or "proficient" in s:
-        return any(re.search(rf"\b{re.escape(lang)}\b", s) for lang in spoken)
-    return False
+from utils.skill_filter import is_valid_skill, looks_like_spoken_language
 
 
 def calculate_match_scores(jobs, user_skills_str):
@@ -101,7 +64,7 @@ def calculate_match_scores(jobs, user_skills_str):
                 isinstance(s, str)
                 and s.strip()
                 and is_valid_skill(s)
-                and not _looks_like_spoken_language(s)
+                and not looks_like_spoken_language(s)
             )
         ]
         missing_skills = [js for js in job_skills_lower if not any(cs in js or js in cs for cs in candidate_skills)]

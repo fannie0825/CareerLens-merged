@@ -17,10 +17,58 @@ from contextlib import contextmanager
 from typing import Optional, Dict, List
 from datetime import datetime
 import uuid
+import re
 
 
 # Database path constant
 DB_PATH_JOB_SEEKER = "database/job_seeker.db"
+
+
+def normalize_education_level(raw: object) -> str:
+    """Normalize common degree abbreviations into canonical education levels.
+
+    Canonical values match the UI dropdown options:
+    - PhD, Master, Bachelor, Diploma, High School
+    """
+    if raw is None:
+        return ""
+    s = str(raw).strip()
+    if not s:
+        return ""
+
+    sl = s.lower()
+
+    # PhD / Doctorate
+    if re.search(r"\b(ph\.?\s*d|dphil|doctorate|doctoral)\b", sl):
+        return "PhD"
+
+    # Master
+    if re.search(r"\b(master|m\.?\s*sc|msc|m\.?\s*a|ma|mba)\b", sl):
+        return "Master"
+
+    # Bachelor (requested: BSc/BBA/BA/BSS, plus common variants)
+    if re.search(r"\b(bachelor|undergrad|undergraduate)\b", sl):
+        return "Bachelor"
+    if re.search(r"\b(b\.?\s*sc|bsc|b\.?\s*ba|bba|b\.?\s*a|ba|b\.?\s*ss|bss)\b", sl):
+        return "Bachelor"
+
+    # Diploma / Associate
+    if re.search(r"\b(diploma|associate)\b", sl):
+        return "Diploma"
+
+    # High school / secondary
+    if re.search(r"\b(high\s*school|secondary)\b", sl):
+        return "High School"
+
+    canonical = {
+        "phd": "PhD",
+        "master": "Master",
+        "bachelor": "Bachelor",
+        "diploma": "Diploma",
+        "high school": "High School",
+        "highschool": "High School",
+    }
+    return canonical.get(sl, s)
 
 
 class JobSeekerDB:
@@ -109,6 +157,9 @@ class JobSeekerDB:
         job_seeker_id = profile.get('job_seeker_id') or self.generate_job_seeker_id()
         timestamp = profile.get('timestamp') or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         last_updated = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        # Normalize education_level so abbreviations (e.g., BSc/BBA/BA/BSS) map to "Bachelor".
+        education_level = normalize_education_level(profile.get('education_level', ''))
         
         with self.get_connection() as conn:
             conn.execute("""
@@ -123,7 +174,7 @@ class JobSeekerDB:
                 job_seeker_id,
                 timestamp,
                 last_updated,
-                profile.get('education_level', ''),
+                education_level,
                 profile.get('major', ''),
                 profile.get('graduation_status', ''),
                 profile.get('university_background', ''),
