@@ -237,6 +237,8 @@ def market_dashboard_page():
             if job_seeker_id:
                 try:
                     from database import get_matched_jobs_for_seeker
+                    from ui.components.dashboard import calculate_match_scores
+                    from utils.skill_filter import filter_skills
 
                     # Fetch at least the expected count (or a reasonable default).
                     limit = max(int(expected_jobs or 0), 25)
@@ -247,13 +249,17 @@ def market_dashboard_page():
                         if not isinstance(job, dict):
                             continue
 
+                        # IMPORTANT: do not trust DB-persisted derived fields like matched_skills,
+                        # missing_skills, skill_match_score, or match_percentage as "truth".
+                        # Those are derived outputs and can become stale when matching rules change.
+                        required_skills = filter_skills(_split_csv(job.get("required_skills")))
                         processed_matches.append({
                             "job": {
                                 "title": job.get("job_title", ""),
                                 "company": job.get("company_name", ""),
                                 "location": job.get("location", ""),
                                 "description": job.get("job_description", ""),
-                                "skills": _split_csv(job.get("required_skills")),
+                                "skills": required_skills,
                                 "url": job.get("application_url", ""),
                                 "posted_date": job.get("posted_date", ""),
                                 "employment_type": job.get("employment_type", ""),
@@ -261,16 +267,17 @@ def market_dashboard_page():
                                 "salary_min": job.get("salary_min"),
                                 "salary_max": job.get("salary_max"),
                             },
-                            # Normalize DB fields to in-app visualization fields
-                            "combined_score": job.get("match_percentage", 0) or 0,
-                            "semantic_score": job.get("cosine_similarity_score", 0) or 0,
-                            "skill_match_percentage": job.get("skill_match_score", 0) or 0,
-                            "experience_match_score": job.get("experience_match_score", 0) or 0,
-                            "matched_skills": _split_csv(job.get("matched_skills")),
-                            "missing_skills": _split_csv(job.get("missing_skills")),
+                            # Feed semantic similarity into the scorer as an input;
+                            # it will normalize 0-1 vs 0-100 and recompute derived outputs.
+                            "similarity_score": job.get("cosine_similarity_score", 0) or 0,
                         })
 
                     if processed_matches:
+                        # Recompute derived match fields using current logic.
+                        profile = st.session_state.get("user_profile", {}) or {}
+                        user_skills_str = profile.get("hard_skills", "") or profile.get("skills", "")
+                        processed_matches = calculate_match_scores(processed_matches, user_skills_str)
+                        processed_matches.sort(key=lambda x: x.get("combined_score", 0), reverse=True)
                         st.session_state.matched_jobs = processed_matches
                 except Exception:
                     # If DB rehydration fails, fall back to the standard empty-state UI.
