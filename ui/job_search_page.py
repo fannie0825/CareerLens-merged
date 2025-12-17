@@ -839,7 +839,7 @@ def _display_job_matches(matched_jobs: List[Dict], num_jobs_to_show: int, job_se
                 )
 
             # Action buttons
-            col_btn1, col_btn2 = st.columns(2)
+            col_btn1, col_btn2, col_btn3 = st.columns(3)
             
             with col_btn1:
                 # Apply link
@@ -867,6 +867,16 @@ def _display_job_matches(matched_jobs: List[Dict], num_jobs_to_show: int, job_se
                     st.session_state.current_page = "tailored_resume"
 
                     # 3) Rerun to land on the Resume Editor immediately
+                    st.rerun()
+
+            with col_btn3:
+                # Mock interview trigger
+                if st.button("🎙️ Mock Interview", key=f"btn_mock_{job.get('id', i)}", use_container_width=True):
+                    st.session_state.selected_job = job
+                    st.session_state.current_page = "ai_interview"
+                    # Ensure a clean start when switching jobs
+                    if 'interview' in st.session_state:
+                        del st.session_state.interview
                     st.rerun()
 
             # Show resume generator if selected

@@ -37,6 +37,24 @@ def ai_interview_page():
     2. Headhunter jobs from head_hunter_jobs.db (fallback)
     """
     st.title("🤖 AI Mock Interview")
+
+    # =========================================================
+    # 🛠️ Smart Entry Logic: detect incoming job from Job Match
+    # =========================================================
+    passed_job = st.session_state.get('selected_job', None)
+    if passed_job:
+        st.info(
+            f"🤖 **Interviewer Ready:** Prepared for your **{passed_job.get('title', 'Unknown')}** "
+            f"interview at **{passed_job.get('company', 'Unknown')}**."
+        )
+
+        if st.button("⬅️ Back to Job Matches", use_container_width=True):
+            st.session_state.selected_job = None
+            st.session_state.selected_job_for_resume = None
+            st.session_state.current_page = "job_recommendations"
+            if 'interview' in st.session_state:
+                del st.session_state.interview
+            st.rerun()
     
     # Get current job seeker ID
     job_seeker_id = st.session_state.get('job_seeker_id')
@@ -89,6 +107,28 @@ def ai_interview_page():
 
     st.success("🎯 Select the position you want to interview for to start the mock interview")
     
+    # If we were passed a job from Job Search, skip selection UI and use it directly.
+    selected_job = None
+    if passed_job:
+        # Convert Job Search job dict to the tuple format expected by interview core:
+        # (id, title, job_description, main_responsibilities, required_skills, company, industry, experience_required)
+        skills = passed_job.get("skills") or passed_job.get("required_skills") or []
+        if isinstance(skills, list):
+            required_skills_str = ", ".join([str(s).strip() for s in skills if str(s).strip()])
+        else:
+            required_skills_str = str(skills or "")
+
+        selected_job = (
+            passed_job.get("id", 0) or 0,
+            passed_job.get("title", "") or "",
+            passed_job.get("description", "") or "",
+            "",  # main_responsibilities
+            required_skills_str,
+            passed_job.get("company", "") or "",
+            passed_job.get("industry", "") or "",
+            passed_job.get("experience_required", "") or "",
+        )
+
     # Job source selection
     job_source = "matched"  # Default to matched jobs
     if matched_jobs and headhunter_jobs:
@@ -105,14 +145,15 @@ def ai_interview_page():
         job_source = "headhunter"
         st.info("📋 Showing headhunter posted jobs")
     
-    # Prepare job options based on source
-    if job_source == "matched" and matched_jobs:
-        jobs, selected_job = _select_matched_job(matched_jobs)
-    else:
-        jobs = headhunter_jobs
-        job_options = {f"#{job[0]} {job[1]} - {job[5]}": job for job in jobs}
-        selected_job_key = st.selectbox("Select Interview Position", list(job_options.keys()))
-        selected_job = job_options[selected_job_key]
+    # Prepare job options based on source (only if not smart-entry)
+    if not selected_job:
+        if job_source == "matched" and matched_jobs:
+            jobs, selected_job = _select_matched_job(matched_jobs)
+        else:
+            jobs = headhunter_jobs
+            job_options = {f"#{job[0]} {job[1]} - {job[5]}": job for job in jobs}
+            selected_job_key = st.selectbox("Select Interview Position", list(job_options.keys()))
+            selected_job = job_options[selected_job_key]
     
     # ==========================================
     # Get seeker profile - prefer job_seeker_id flow
@@ -135,6 +176,13 @@ def ai_interview_page():
             st.write(f"**Skill Requirements:** {skill_preview}...")
 
     # Initialize interview session
+    # Reset interview if the target job changed (prevents cross-job state leaks)
+    current_job_key = f"{selected_job[1]}::{selected_job[5]}::{selected_job[0]}"
+    if st.session_state.get("_interview_job_key") != current_job_key:
+        if 'interview' in st.session_state:
+            del st.session_state.interview
+        st.session_state._interview_job_key = current_job_key
+
     if 'interview' not in st.session_state:
         st.session_state.interview = initialize_interview_session(selected_job)
     interview = st.session_state.interview
