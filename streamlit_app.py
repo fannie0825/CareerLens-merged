@@ -266,26 +266,6 @@ except Exception:
 
 
 # ============================================================================
-# HELPER FUNCTIONS
-# ============================================================================
-def display_token_usage():
-    """Display token usage and cost tracking"""
-    if 'token_tracker' in st.session_state:
-        tracker = st.session_state.token_tracker
-        summary = tracker.get_summary()
-        
-        if summary['total_tokens'] > 0:
-            with st.expander("📊 API Usage Stats"):
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    st.metric("Total Tokens", f"{summary['total_tokens']:,}")
-                with col2:
-                    st.metric("Embedding Tokens", f"{summary['embedding_tokens']:,}")
-                with col3:
-                    st.metric("Est. Cost", f"${summary['estimated_cost_usd']:.4f}")
-
-
-# ============================================================================
 # SIDEBAR NAVIGATION
 # ============================================================================
 st.sidebar.markdown("""
@@ -443,16 +423,6 @@ with st.sidebar:
                 key="sidebar_salary_filter"
             )
             st.session_state.salary_expectation = salary_exp
-    
-    # Display token usage
-    display_token_usage()
-    
-    st.markdown("---")
-    
-    # Display current session state
-    current_id = st.session_state.get('job_seeker_id')
-    if current_id:
-        st.info(f"Current Session ID: **{current_id}**")
 if not MODULES_AVAILABLE:
     st.error("❌ Page modules not available. Please ensure the modules/ui/pages directory is properly installed.")
     st.info("Falling back to basic functionality...")
@@ -496,26 +466,6 @@ elif st.session_state.current_page == "how_it_works":
     render_how_it_works_page()
 
 
-# ============================================================================
-# SIDEBAR HELP AND FOOTER
-# ============================================================================
-st.sidebar.markdown("---")
-st.sidebar.markdown("""
-### 💡 Usage Instructions
-
-**For Job Seekers:**
-- **Job Seeker**: Upload your CV and fill in your profile
-- **Job Search**: Find AI-matched positions based on your profile
-- **AI Powered Tailored Resume**: Generate job-specific resumes
-- **AI Mock Interview**: Practice with AI-powered mock interviews
-- **Market Dashboard**: View comprehensive market insights
-- **How This App Works**: Learn about our AI technology
-
-**For Recruiters:**
-- **Job Posting**: Publish and manage job openings
-- **Recruitment Match**: Smart candidate-position matching
-""")
-                    
 # Footer
 st.markdown("---")
 st.caption("🤖 Powered by Azure OpenAI, Pinecone Vector Search, RapidAPI LinkedIn Jobs, and CareerLens AI")
