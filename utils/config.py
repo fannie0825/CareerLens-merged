@@ -58,6 +58,35 @@ RAPIDAPI_MAX_REQUESTS_PER_MINUTE = _get_config_int("RAPIDAPI_MAX_REQUESTS_PER_MI
 ENABLE_PROFILE_PASS2 = os.getenv("ENABLE_PROFILE_PASS2", "false").lower() in ("true", "1", "yes")
 USE_FAST_SKILL_MATCHING = os.getenv("USE_FAST_SKILL_MATCHING", "true").lower() in ("true", "1", "yes")
 
+# ============================================================================
+# Job Search UI constants (shared across pages)
+# ============================================================================
+
+# Labels are used directly in Streamlit radio controls.
+JOB_SEARCH_MODE_TO_COUNT = {
+    "⚡ Quick Search (15 jobs)": 15,
+    "🔍 Standard Search (25 jobs)": 25,
+    "🔬 Deep Search (40 jobs)": 40,
+}
+
+JOB_SEARCH_MODE_OPTIONS = list(JOB_SEARCH_MODE_TO_COUNT.keys())
+
+JOB_SEARCH_MODE_TIME_ESTIMATES = {
+    "⚡ Quick Search (15 jobs)": "~30-60 seconds",
+    "🔍 Standard Search (25 jobs)": "~60-90 seconds",
+    "🔬 Deep Search (40 jobs)": "~90-120 seconds",
+}
+
+
+def get_num_jobs_to_search(search_mode_label: str, default: int = 15) -> int:
+    """Map a UI search-mode label to how many jobs to fetch."""
+    return int(JOB_SEARCH_MODE_TO_COUNT.get(search_mode_label, default))
+
+
+def get_search_time_estimate(search_mode_label: str, default: str = "~60 seconds") -> str:
+    """Map a UI search-mode label to the time estimate string."""
+    return str(JOB_SEARCH_MODE_TIME_ESTIMATES.get(search_mode_label, default))
+
 
 def _determine_index_limit(total_jobs, desired_top_matches):
     """Cap how many jobs we embed per search to avoid unnecessary API calls."""
