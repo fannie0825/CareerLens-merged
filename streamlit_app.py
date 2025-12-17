@@ -316,10 +316,12 @@ def display_token_usage():
             logo_displayed = True
         except Exception as e:
             # Fallback to standard Streamlit image if base64 fails
+            print(f"DEBUG: Logo base64 loading failed: {e}")
             try:
-                st.sidebar.image(logo_path, use_container_width=True)
+                st.sidebar.image(logo_path, use_column_width=True)
                 logo_displayed = True
-            except Exception:
+            except Exception as e2:
+                print(f"DEBUG: Logo fallback failed: {e2}")
                 pass
 
     st.sidebar.markdown("""
