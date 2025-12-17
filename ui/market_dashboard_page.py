@@ -21,7 +21,6 @@ def market_dashboard_page():
             render_hero_banner,
             display_resume_generator as modular_display_resume_generator,
             display_market_positioning_profile,
-            display_refine_results_section,
             display_ranked_matches_table,
             display_match_breakdown
         )
@@ -48,8 +47,8 @@ def market_dashboard_page():
             target_title = job_context.get("title") or job_context.get("job_title") or "Selected role"
             target_company = job_context.get("company") or job_context.get("company_name") or ""
             subtitle = f"{target_title} @ {target_company}" if target_company else target_title
-            st.subheader(f"📊 Market Analysis for: {subtitle}")
-            st.caption("Tip: run a Job Search first for richer market insights across matched roles.")
+            st.subheader(f"📊 Your Market Position for: {subtitle}")
+            st.caption("Tip: run a Job Search first to generate matched roles, then review your positioning here.")
         
         # Check if resume generator should be shown
         if st.session_state.get('show_resume_generator', False):
@@ -59,29 +58,18 @@ def market_dashboard_page():
         # Render hero banner at the top of main content
         render_hero_banner(
             st.session_state.get('user_profile', {}),
-            st.session_state.matched_jobs if st.session_state.get('dashboard_ready', False) else None
+            st.session_state.get('matched_jobs')
         )
         
-        # Main dashboard area - show whenever we have matches (Job Search sets matched_jobs too)
-        if st.session_state.get('matched_jobs') and not st.session_state.get('dashboard_ready', False):
-            # Backfill the flag for users arriving from Job Search / cached matches.
-            st.session_state.dashboard_ready = True
-
         if not st.session_state.get('matched_jobs'):
-            st.info("👆 Upload your CV in the sidebar to get started. Once uploaded, use the 'Refine Results' section below to search for jobs and see your market positioning.")
-            
-            # Show the Refine Results section even before search to allow user to initiate search
-            display_refine_results_section([], st.session_state.get('user_profile', {}))
+            st.info(
+                "To see your market positioning, first upload your CV on **Job Seeker** and generate job matches on **Job Search**. "
+                "Then come back here to review your positioning, skill gaps, and match breakdown."
+            )
             return
         
         # Display Market Positioning Profile (Top Section)
         display_market_positioning_profile(
-            st.session_state.matched_jobs,
-            st.session_state.get('user_profile', {})
-        )
-        
-        # Display Refine Results Section
-        display_refine_results_section(
             st.session_state.matched_jobs,
             st.session_state.get('user_profile', {})
         )
