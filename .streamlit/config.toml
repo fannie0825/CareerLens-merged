@@ -46,9 +46,6 @@ gatherUsageStats = false
 # Show error details in the browser
 showErrorDetails = true
 
-# Caching settings
-caching = true
-
 # Display running state in browser tab
 showSidebarNavigation = true
 

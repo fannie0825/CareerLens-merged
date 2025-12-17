@@ -442,7 +442,7 @@ if active_job:
         if company:
             st.caption(company)
 
-        if st.button("Clear selection", key="clear_selected_job", use_container_width=True):
+        if st.button("Clear selection", key="clear_selected_job", width="stretch"):
             st.session_state.selected_job = None
             st.session_state.selected_job_for_resume = None
             st.session_state.show_resume_generator = False

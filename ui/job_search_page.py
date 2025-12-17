@@ -337,7 +337,7 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
                 
                 col_cache1, col_cache2 = st.columns(2)
                 with col_cache1:
-                    if st.button("📂 Use Cached Results", use_container_width=True):
+                    if st.button("📂 Use Cached Results", width="stretch"):
                         cached_matches = matched_db.get_matched_jobs(
                             current_job_seeker_id, 
                             min_match=0, 
@@ -390,7 +390,7 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
     # 🔎 STEP 2: Search Jobs using Unified SemanticJobSearch
     # -------------------------------------------------------
     # Search button to trigger job search
-    search_button = st.button("🔍 Search New Jobs", type="primary", use_container_width=True)
+    search_button = st.button("🔍 Search New Jobs", type="primary", width="stretch")
     
     matched_jobs = st.session_state.get('matched_jobs', [])
     
@@ -571,7 +571,7 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
             # Suggest next steps
             st.markdown("---")
             st.info("💡 **Next Step:** Go to the **Market Dashboard** to see detailed analysis, salary insights, and skill gaps based on these results.")
-            if st.button("📊 View Market Analysis", use_container_width=True):
+            if st.button("📊 View Market Analysis", width="stretch"):
                 st.session_state.current_page = "market_dashboard"
                 st.rerun()
 
@@ -883,7 +883,7 @@ def _display_job_matches(matched_jobs: List[Dict], num_jobs_to_show: int, job_se
                     st.link_button(
                         "🔗 Apply Now",
                         job_url,
-                        use_container_width=True,
+                        width="stretch",
                         type="primary"
                     )
                 else:
@@ -891,7 +891,7 @@ def _display_job_matches(matched_jobs: List[Dict], num_jobs_to_show: int, job_se
             
             with col_btn2:
                 # Resume tailoring button
-                if st.button("✨ Tailor Resume", key=f"btn_tailor_{job.get('id', i)}", use_container_width=True):
+                if st.button("✨ Tailor Resume", key=f"btn_tailor_{job.get('id', i)}", width="stretch"):
                     # 1) Store the job object so the Resume Editor can find it
                     st.session_state.selected_job = _normalize_job_for_session(job, fallback_id=str(job.get('id', i)))
                     # Compatibility: keep the older key used elsewhere in the app
@@ -906,7 +906,7 @@ def _display_job_matches(matched_jobs: List[Dict], num_jobs_to_show: int, job_se
 
             with col_btn3:
                 # Mock interview trigger
-                if st.button("🎙️ Mock Interview", key=f"btn_mock_{job.get('id', i)}", use_container_width=True):
+                if st.button("🎙️ Mock Interview", key=f"btn_mock_{job.get('id', i)}", width="stretch"):
                     st.session_state.selected_job = _normalize_job_for_session(job, fallback_id=str(job.get('id', i)))
                     st.session_state.current_page = "ai_interview"
                     # Ensure a clean start when switching jobs
@@ -954,7 +954,7 @@ def _display_resume_generator_ui(job: Dict, user_profile: Dict, resume_text: str
     
     st.info(f"**Tailoring resume for:** {job.get('title', 'Unknown')} at {job.get('company', 'Unknown')}")
     
-    if st.button("🚀 Generate Tailored Resume", type="primary", use_container_width=True):
+    if st.button("🚀 Generate Tailored Resume", type="primary", width="stretch"):
         # Use ProgressTracker to maintain WebSocket connection during AI generation
         with ProgressTracker("Tailoring your resume", total_steps=4) as tracker:
             

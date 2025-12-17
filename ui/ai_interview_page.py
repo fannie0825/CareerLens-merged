@@ -49,7 +49,7 @@ def ai_interview_page():
         )
 
         # Option to clear context and choose a different job within the interview page
-        if st.button("Cancel & Use different job", use_container_width=True):
+        if st.button("Cancel & Use different job", width="stretch"):
             st.session_state.selected_job = None
             st.session_state.selected_job_for_resume = None
             if 'interview' in st.session_state:
@@ -60,7 +60,7 @@ def ai_interview_page():
                 del st.session_state._interview_job_key
             st.rerun()
 
-        if st.button("⬅️ Back to Job Matches", use_container_width=True):
+        if st.button("⬅️ Back to Job Matches", width="stretch"):
             st.session_state.selected_job = None
             st.session_state.selected_job_for_resume = None
             st.session_state.current_page = "job_recommendations"
@@ -112,7 +112,7 @@ def ai_interview_page():
         
         Or, headhunters can publish positions in the Headhunter module.
         """)
-        if st.button("🔍 Go to Job Search", use_container_width=True):
+        if st.button("🔍 Go to Job Search", width="stretch"):
             st.session_state.current_page = "job_recommendations"
             st.rerun()
         return

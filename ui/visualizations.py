@@ -169,7 +169,7 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
     match_fig.add_trace(go.Bar(x=job_titles, y=match_percentages, name="Match Percentage"))
     match_fig.update_layout(barmode='group', xaxis_tickangle=-45, yaxis=dict(title="Score / Percent"))
     match_fig = apply_chart_theme(match_fig)
-    st.plotly_chart(match_fig, use_container_width=True)
+    st.plotly_chart(match_fig, width="stretch")
     """
     # 2. Salary Distribution
     st.subheader("Average Salary per Job")
@@ -178,7 +178,7 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
         salary_fig = go.Figure([go.Bar(x=job_titles, y=base_salary, text=salary_labels, textposition='auto')])
         salary_fig.update_layout(xaxis_tickangle=-45, yaxis_title="Average Salary")
         salary_fig = apply_chart_theme(salary_fig)
-        st.plotly_chart(salary_fig, use_container_width=True)
+        st.plotly_chart(salary_fig, width="stretch")
     """
     # 4. Employment Type Frequencies
     st.subheader("Employment Type Frequencies")
@@ -188,7 +188,7 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
         fig = go.Figure([go.Bar(x=list(emp_ct.keys()), y=list(emp_ct.values()))])
         fig.update_layout(yaxis_title="Number of Jobs")
         fig = apply_chart_theme(fig)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     # 5. Posting Date Histogram
     if posting_dates:
@@ -199,7 +199,7 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
         fig = go.Figure([go.Bar(x=xs, y=ys)])
         fig.update_layout(xaxis_title="Posting Date", yaxis_title="Jobs Posted")
         fig = apply_chart_theme(fig)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     # 6. Skill Match/Gap Comparison
     st.subheader("Matched and Missing Skill Counts per Job")
@@ -208,7 +208,7 @@ def create_enhanced_visualizations(matched_jobs, job_seeker_data=None):
     skills_fig.add_trace(go.Bar(x=job_titles, y=missing_skill_counts, name='Missing Skills Count'))
     skills_fig.update_layout(barmode='group', xaxis_tickangle=-45, yaxis_title='Skill Count')
     skills_fig = apply_chart_theme(skills_fig)
-    st.plotly_chart(skills_fig, use_container_width=True)
+    st.plotly_chart(skills_fig, width="stretch")
 
 # Estimate salary expectation from job seeker data
 def find_salary_expectation(job, job_seeker_data: dict) -> float:
@@ -354,7 +354,7 @@ def create_job_comparison_radar(matched_job: dict, job: dict, job_seeker_data: d
             )
         )
         
-        st.plotly_chart(fig, use_container_width=True, key=f"radar_chart_{chart_key}")
+        st.plotly_chart(fig, width="stretch", key=f"radar_chart_{chart_key}")
         
     except Exception as e:
         st.error(f"Error creating radar chart: {str(e)}")

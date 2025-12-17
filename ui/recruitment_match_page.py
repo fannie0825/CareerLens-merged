@@ -130,7 +130,7 @@ def recruitment_match_page():
         max_candidates = st.slider("Display Top N Candidates", 1, 20, 10)
 
     # Execute matching
-    if st.button("🚀 Start Smart Matching", type="primary", use_container_width=True):
+    if st.button("🚀 Start Smart Matching", type="primary", width="stretch"):
         st.subheader("📈 Match Results")
 
         results = []

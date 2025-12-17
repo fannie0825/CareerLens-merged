@@ -362,7 +362,7 @@ def display_refine_results_section(matched_jobs, user_profile):
         
         button_text = "🔄 Apply Filters & Refresh" if st.session_state.get('matched_jobs') else "🔍 Search Jobs"
         
-        if st.button(button_text, type="primary", use_container_width=True):
+        if st.button(button_text, type="primary", width="stretch"):
             if not has_profile:
                 st.warning("⚠️ Please upload your CV in the sidebar first to get personalized job matches.")
                 return
@@ -555,7 +555,7 @@ def display_ranked_matches_table(matched_jobs, user_profile):
         df_display,
         column_config=column_config,
         hide_index=True,
-        use_container_width=True,
+        width="stretch",
         on_select="rerun",
         selection_mode="single-row"
     )
@@ -676,7 +676,7 @@ def display_match_breakdown(matched_jobs, user_profile):
                 else:
                     st.warning(f"⚠️ **Skill Gap:** Consider developing expertise in {top_missing}.")
             
-            if st.button("✨ Tailor Resume for this Job", use_container_width=True, type="primary", key="tailor_resume_button"):
+            if st.button("✨ Tailor Resume for this Job", width="stretch", type="primary", key="tailor_resume_button"):
                 st.session_state.selected_job = job
                 st.session_state.show_resume_generator = True
                 st.rerun()
@@ -686,4 +686,4 @@ def display_match_breakdown(matched_jobs, user_profile):
             job_url = job.get('url', '#')
             if job_url and job_url != '#':
                 st.markdown("---")
-                st.link_button("🚀 Apply to Job", job_url, use_container_width=True, type="secondary")
+                st.link_button("🚀 Apply to Job", job_url, width="stretch", type="secondary")
