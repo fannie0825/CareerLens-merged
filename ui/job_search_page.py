@@ -383,13 +383,19 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
                             # Convert DB format to display format
                             processed_matches = []
                             for job in cached_matches:
+                                # IMPORTANT: Do not trust DB-persisted derived fields like
+                                # matched_skills/missing_skills/skill_match_score. Those are
+                                # derived outputs that can become stale when matching logic
+                                # changes. We'll recompute after hydration.
+                                required_skills = [s.strip() for s in job.get('required_skills', '').split(',') if s.strip()]
+                                required_skills = filter_skills(required_skills)
                                 processed_matches.append({
                                     'job': {
                                         'title': job.get('job_title', ''),
                                         'company': job.get('company_name', ''),
                                         'location': job.get('location', ''),
                                         'description': job.get('job_description', ''),
-                                        'skills': [s.strip() for s in job.get('required_skills', '').split(',') if s.strip()],
+                                        'skills': required_skills,
                                         'url': job.get('application_url', ''),
                                         'posted_date': job.get('posted_date', ''),
                                         'job_type': job.get('employment_type', ''),
@@ -400,13 +406,17 @@ def job_recommendations_page(job_seeker_id: Optional[str] = None):
                                         'employment_type': job.get("employment_type", ''),
                                         'posted_date': job.get("posted_date", '')
                                     },
-                                    'combined_score': job.get('match_percentage', 0),
-                                    'semantic_score': (job.get('cosine_similarity_score', 0) or 0) * 100,
-                                    'skill_match_percentage': (job.get('skill_match_score', 0) or 0) * 100,
-                                    'matched_skills': [s.strip() for s in job.get('matched_skills', '').split(',') if s.strip()],
-                                    'missing_skills': [s.strip() for s in job.get('missing_skills', '').split(',') if s.strip()],
+                                    # Provide semantic score in the expected input field so we can
+                                    # recompute derived outputs consistently.
+                                    # DB stores cosine similarity as 0-1; the scorer normalizes.
+                                    'similarity_score': job.get('cosine_similarity_score', 0) or 0,
                                 })
-                            
+
+                            # Recompute derived match fields using current logic.
+                            user_skills_str = job_seeker_data.get('hard_skills', '') or job_seeker_data.get('skills', '')
+                            processed_matches = calculate_match_scores(processed_matches, user_skills_str)
+                            processed_matches.sort(key=lambda x: x.get('combined_score', 0), reverse=True)
+
                             st.session_state.matched_jobs = processed_matches
                             # Market Dashboard gating uses this flag; Job Search should set it.
                             st.session_state.dashboard_ready = True
