@@ -250,6 +250,13 @@ def display_resume_generator():
     # ---------------------------------------------------------------------
     st.title("✨ AI Resume Tailor")
 
+    # Ensure profile is always a dict to avoid AttributeError when arriving
+    # here directly from Job Search without a hydrated profile.
+    user_profile = st.session_state.get("user_profile")
+    if not isinstance(user_profile, dict):
+        user_profile = {}
+        st.session_state.user_profile = user_profile
+
     passed_job = st.session_state.get('selected_job', None)
 
     def _safe_filename_component(value: str) -> str:
@@ -272,7 +279,9 @@ def display_resume_generator():
 
     if passed_job:
         # Visual confirmation for the user
-        st.success(f"🎯 **Targeting:** {passed_job.get('title', 'Unknown')} at {passed_job.get('company', 'Unknown')}")
+        target_title = passed_job.get("title") or passed_job.get("job_title") or "Unknown"
+        target_company = passed_job.get("company") or passed_job.get("company_name") or "Unknown"
+        st.success(f"🎯 **Targeting:** {target_title} at {target_company}")
 
         # Pre-fill the data from the session state
         job_description_input = passed_job.get('description', "") or ""
@@ -306,7 +315,7 @@ def display_resume_generator():
     </div>
     """, unsafe_allow_html=True)
     
-    if not st.session_state.user_profile.get('name') or not st.session_state.user_profile.get('experience'):
+    if not user_profile.get('name') or not user_profile.get('experience'):
         st.error("⚠️ Please complete your profile first!")
         if st.button("← Go to Profile"):
             st.session_state.show_resume_generator = False
@@ -316,7 +325,7 @@ def display_resume_generator():
     col1, col2 = st.columns([3, 1])
     
     with col1:
-        st.write("**Your Profile:**", st.session_state.user_profile.get('name', 'N/A'))
+        st.write("**Your Profile:**", user_profile.get('name', 'N/A'))
     
     with col2:
         if st.button("← Back", width="stretch"):
@@ -346,7 +355,7 @@ def display_resume_generator():
                 return
             raw_resume_text = st.session_state.get('resume_text')
             resume_data = text_gen.generate_resume(
-                st.session_state.user_profile, 
+                user_profile,
                 job,
                 raw_resume_text=raw_resume_text
             )
@@ -372,17 +381,21 @@ def display_resume_generator():
             else:
                 st.error("❌ Failed to generate resume. Please try again.")
     
-    if st.session_state.generated_resume and st.session_state.get('match_score') is not None:
+    generated_resume = st.session_state.get("generated_resume")
+    match_score = st.session_state.get("match_score")
+    missing_keywords = st.session_state.get("missing_keywords")
+
+    if generated_resume and match_score is not None:
         display_match_score_feedback(
-            st.session_state.match_score,
-            st.session_state.missing_keywords,
-            job['title']
+            match_score,
+            missing_keywords,
+            job_title
         )
     
-    if st.session_state.generated_resume:
+    if generated_resume:
         st.markdown("---")
         
-        edited_resume_data = render_structured_resume_editor(st.session_state.generated_resume)
+        edited_resume_data = render_structured_resume_editor(generated_resume)
         
         if edited_resume_data:
             st.session_state.generated_resume = edited_resume_data
